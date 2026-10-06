@@ -1,0 +1,6 @@
+{
+  "name": "TeleHealth Management System",
+  "description": "A comprehensive neumorphic healthcare management system for patient profiles, appointment booking, real-time doctor availability, schedule management, and clinical operations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

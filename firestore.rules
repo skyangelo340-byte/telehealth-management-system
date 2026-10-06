@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128;
+    }
+
+    match /test/{docId} {
+      allow read: if isValidId(docId);
+    }
+
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(userId)
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 256
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() <= 256
+        && request.resource.data.role in ['patient', 'doctor', 'admin'];
+      allow delete: if isValidId(userId);
+    }
+
+    match /patients/{patientId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(patientId)
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() <= 256
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 256;
+      allow delete: if isValidId(patientId);
+    }
+
+    match /doctors/{doctorId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(doctorId)
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() <= 256
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 256;
+      allow delete: if isValidId(doctorId);
+    }
+
+    match /appointments/{appointmentId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(appointmentId)
+        && request.resource.data.referenceNumber is string
+        && request.resource.data.referenceNumber.size() <= 64
+        && request.resource.data.patientId is string
+        && request.resource.data.doctorId is string
+        && request.resource.data.date is string
+        && request.resource.data.startTime is string
+        && request.resource.data.status is string;
+      allow delete: if isValidId(appointmentId);
+    }
+
+    match /schedules/{doctorId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(doctorId)
+        && request.resource.data.doctorId is string;
+      allow delete: if isValidId(doctorId);
+    }
+
+    match /departments/{departmentId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(departmentId)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 256;
+      allow delete: if isValidId(departmentId);
+    }
+
+    match /appointmentTypes/{typeId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(typeId)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 256;
+      allow delete: if isValidId(typeId);
+    }
+
+    match /notifications/{notificationId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(notificationId)
+        && request.resource.data.title is string
+        && request.resource.data.message is string;
+      allow delete: if isValidId(notificationId);
+    }
+
+    match /auditLogs/{logId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(logId)
+        && request.resource.data.action is string;
+      allow delete: if isValidId(logId);
+    }
+
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(settingId);
+    }
+  }
+}

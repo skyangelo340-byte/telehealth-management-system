@@ -1,0 +1,192 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Authenticated user account and role credential record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "password": { "type": "string", "maxLength": 256 },
+        "fullName": { "type": "string", "maxLength": 256 },
+        "role": { "type": "string", "enum": ["patient", "doctor", "admin"] },
+        "googleVerified": { "type": "boolean" },
+        "profileLinked": { "type": "boolean" },
+        "lastLogin": { "type": "string", "maxLength": 64 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "doctorId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "email", "fullName", "role"]
+    },
+    "PatientProfile": {
+      "title": "PatientProfile",
+      "description": "Patient demographic and medical profile.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "fullName": { "type": "string", "maxLength": 256 },
+        "dateOfBirth": { "type": "string", "maxLength": 32 },
+        "sex": { "type": "string", "maxLength": 64 },
+        "contactNumber": { "type": "string", "maxLength": 64 },
+        "email": { "type": "string", "maxLength": 256 },
+        "knownAllergies": { "type": "string", "maxLength": 2000 },
+        "currentMedications": { "type": "string", "maxLength": 2000 },
+        "existingMedicalConditions": { "type": "string", "maxLength": 2000 },
+        "profileCompletionPercent": { "type": "number" },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "fullName", "email"]
+    },
+    "DoctorProfile": {
+      "title": "DoctorProfile",
+      "description": "Attending physician profile and department assignment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "fullName": { "type": "string", "maxLength": 256 },
+        "title": { "type": "string", "maxLength": 256 },
+        "departmentId": { "type": "string", "maxLength": 128 },
+        "departmentName": { "type": "string", "maxLength": 256 },
+        "specialty": { "type": "string", "maxLength": 256 },
+        "licenseNumber": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "contactNumber": { "type": "string", "maxLength": 64 },
+        "bio": { "type": "string", "maxLength": 2000 },
+        "consultationFeeLabel": { "type": "string", "maxLength": 256 },
+        "status": { "type": "string", "enum": ["Active", "On Leave", "Inactive"] }
+      },
+      "required": ["id", "userId", "fullName", "departmentId", "email", "status"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "1-hour clinical appointment reservation and status record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "referenceNumber": { "type": "string", "maxLength": 64 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "patientName": { "type": "string", "maxLength": 256 },
+        "patientEmail": { "type": "string", "maxLength": 256 },
+        "doctorId": { "type": "string", "maxLength": 128 },
+        "doctorName": { "type": "string", "maxLength": 256 },
+        "departmentId": { "type": "string", "maxLength": 128 },
+        "departmentName": { "type": "string", "maxLength": 256 },
+        "appointmentTypeId": { "type": "string", "maxLength": 128 },
+        "appointmentTypeName": { "type": "string", "maxLength": 256 },
+        "consultationMode": { "type": "string", "maxLength": 64 },
+        "googleMeetLink": { "type": "string", "maxLength": 512 },
+        "date": { "type": "string", "maxLength": 32 },
+        "startTime": { "type": "string", "maxLength": 16 },
+        "endTime": { "type": "string", "maxLength": 16 },
+        "timeLabel": { "type": "string", "maxLength": 64 },
+        "reasonForVisit": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "referenceNumber", "patientId", "doctorId", "date", "startTime", "status"]
+    },
+    "DoctorSchedule": {
+      "title": "DoctorSchedule",
+      "description": "Doctor working days, clinic windows, and leave/slot blocks.",
+      "type": "object",
+      "properties": {
+        "doctorId": { "type": "string", "maxLength": 128 },
+        "timezone": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["doctorId"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "Clinical department record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 256 },
+        "code": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["id", "name", "code"]
+    },
+    "AppointmentType": {
+      "title": "AppointmentType",
+      "description": "Standard 60-minute appointment service type.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 256 },
+        "durationMinutes": { "type": "number" }
+      },
+      "required": ["id", "name", "durationMinutes"]
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "In-app notification alert.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "recipientRole": { "type": "string", "maxLength": 32 },
+        "recipientId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "message": { "type": "string", "maxLength": 2000 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "recipientRole", "title", "message"]
+    },
+    "AuditLogEntry": {
+      "title": "AuditLogEntry",
+      "description": "System audit log entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "actorName": { "type": "string", "maxLength": 256 },
+        "actorRole": { "type": "string", "maxLength": 32 },
+        "action": { "type": "string", "maxLength": 256 },
+        "targetReference": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 2000 }
+      },
+      "required": ["id", "timestamp", "actorName", "action"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserAccount",
+      "description": "User accounts with role and password credentials."
+    },
+    "/patients/{patientId}": {
+      "schema": "PatientProfile",
+      "description": "Patient demographic and medical profiles."
+    },
+    "/doctors/{doctorId}": {
+      "schema": "DoctorProfile",
+      "description": "Doctor profiles and department assignments."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Appointments across all doctors and patients."
+    },
+    "/schedules/{doctorId}": {
+      "schema": "DoctorSchedule",
+      "description": "Doctor schedules and leave blocks."
+    },
+    "/departments/{departmentId}": {
+      "schema": "Department",
+      "description": "Clinic medical departments."
+    },
+    "/appointmentTypes/{typeId}": {
+      "schema": "AppointmentType",
+      "description": "Clinic 1-hour appointment service types."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "NotificationItem",
+      "description": "Role-scoped notifications."
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLogEntry",
+      "description": "Clinic governance audit trail."
+    }
+  }
+}
