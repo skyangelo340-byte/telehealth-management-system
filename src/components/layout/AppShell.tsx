@@ -80,33 +80,63 @@ export const AppShell: React.FC<AppShellProps> = ({
   });
   const unreadCount = roleNotifications.filter((n) => !n.read).length;
 
+  const renderClinicalMainBackground = () => (
+    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+      {/* Base Rich Clinical Multi-Stop Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.16),transparent_65%),radial-gradient(ellipse_70%_50%_at_85%_48%,rgba(96,165,250,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_82%_85%,rgba(22,134,92,0.12),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]" />
+
+      {/* Precision Clinical Coordinate Grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(23,43,77,0.038)_1px,transparent_1px),linear-gradient(to_bottom,rgba(23,43,77,0.038)_1px,transparent_1px)] bg-[size:48px_48px]" />
+
+      {/* Soft Ambient Light Accents */}
+      <div className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[#3478F6]/14 blur-3xl" />
+      <div className="absolute top-[28%] -right-28 w-[440px] h-[440px] rounded-full bg-[#60A5FA]/16 blur-3xl" />
+      <div className="absolute -bottom-28 left-[22%] w-[520px] h-[360px] rounded-full bg-[#16865C]/10 blur-3xl" />
+
+      {/* Subtle Architectural Contour Rings & Medical Crosshair Accents */}
+      <svg
+        className="absolute top-0 right-0 w-[680px] h-[680px] text-[#3478F6]/[0.075] -translate-y-1/4 translate-x-1/5"
+        viewBox="0 0 600 600"
+        fill="none"
+      >
+        <circle cx="300" cy="300" r="140" stroke="currentColor" strokeWidth="1.25" strokeDasharray="6 6" />
+        <circle cx="300" cy="300" r="210" stroke="currentColor" strokeWidth="1.25" />
+        <circle cx="300" cy="300" r="280" stroke="currentColor" strokeWidth="1" strokeDasharray="3 8" />
+        <path d="M300 10V590M10 300H590" stroke="currentColor" strokeWidth="0.75" />
+      </svg>
+
+      <svg
+        className="absolute bottom-8 left-0 w-[560px] h-[320px] text-[#172B4D]/[0.05] -translate-x-16"
+        viewBox="0 0 560 320"
+        fill="none"
+      >
+        <path
+          d="M0 240 C 140 160, 260 290, 400 190 C 470 140, 520 165, 560 120"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M0 280 C 150 200, 280 310, 420 220 C 485 175, 525 195, 560 155"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeDasharray="4 6"
+        />
+      </svg>
+    </div>
+  );
+
   // PUBLIC / GUEST SHELL: Enforces the 3-Zone Top Bar Contract
   if (currentRole === 'guest') {
     return (
-      <div className="min-h-screen flex flex-col bg-[#E9EEF3] text-[#172B4D]">
+      <div className="min-h-screen flex flex-col bg-transparent text-[#172B4D]">
         {/* Top Bar Contract: Zone 1 (Single wordmark) — Zone 2 (4-5 clean text links) — Zone 3 (1-2 primary actions) */}
-        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-          {/* Zone 1: Single text element wordmark */}
-          <button
-            type="button"
-            onClick={() => {
-              onNavigate('landing');
-              setTimeout(() => {
-                const el = document.getElementById('overview');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                else window.scrollTo({ top: 0, behavior: 'smooth' });
-              }, 30);
-            }}
-            className="text-lg font-extrabold tracking-tight text-[#172B4D] font-display cursor-pointer whitespace-nowrap"
-          >
-            TeleHealth
-          </button>
-
-          {/* Zone 2: Clean text navigation links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#64748B]" aria-label="Public navigation">
+        <header className="sticky top-0 z-30 bg-[#E2E9F2]/80 backdrop-blur-md border-b border-black/5 px-4 sm:px-8 py-3.5">
+          <div className="flex items-center justify-between">
+            {/* Zone 1: Single text element wordmark */}
             <button
               type="button"
               onClick={() => {
+                setMobileDrawerOpen(false);
                 onNavigate('landing');
                 setTimeout(() => {
                   const el = document.getElementById('overview');
@@ -114,86 +144,149 @@ export const AppShell: React.FC<AppShellProps> = ({
                   else window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 30);
               }}
-              className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
+              className="text-lg font-extrabold tracking-tight text-[#172B4D] font-display cursor-pointer whitespace-nowrap"
             >
-              Overview
+              TeleHealth
             </button>
-            <a
-              href="#departments"
-              onClick={(e) => {
-                if (currentScreen !== 'landing') {
-                  e.preventDefault();
+
+            {/* Zone 2: Clean text navigation links */}
+            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#64748B]" aria-label="Public navigation">
+              <button
+                type="button"
+                onClick={() => {
                   onNavigate('landing');
                   setTimeout(() => {
-                    document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }, 50);
-                }
-              }}
-              className="hover:text-[#172B4D] transition-colors whitespace-nowrap"
-            >
-              Departments
-            </a>
+                    const el = document.getElementById('overview');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }, 30);
+                }}
+                className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
+              >
+                Overview
+              </button>
+              <a
+                href="#departments"
+                onClick={(e) => {
+                  if (currentScreen !== 'landing') {
+                    e.preventDefault();
+                    onNavigate('landing');
+                    setTimeout(() => {
+                      document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 50);
+                  }
+                }}
+                className="hover:text-[#172B4D] transition-colors whitespace-nowrap"
+              >
+                Departments
+              </a>
+              <button
+                type="button"
+                onClick={() => onNavigate('telehealth-assessment')}
+                className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
+              >
+                Symptom Assessment
+              </button>
+            </nav>
+
+            {/* Zone 3: Desktop primary actions */}
+            <div className="hidden md:flex items-center gap-3">
+              <NeuButton size="sm" onClick={() => onNavigate('sign-in')}>
+                Sign In
+              </NeuButton>
+              <NeuButton variant="primary" size="sm" onClick={onBookAppointmentClick}>
+                Book Appointment
+              </NeuButton>
+            </div>
+
+            {/* Mobile Hamburger Toggle Button */}
             <button
               type="button"
-              onClick={() => onNavigate('telehealth-assessment')}
-              className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
+              onClick={() => setMobileDrawerOpen((prev) => !prev)}
+              aria-label={mobileDrawerOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileDrawerOpen}
+              className="md:hidden neu-btn w-10 h-10 rounded-xl flex items-center justify-center text-[#172B4D] cursor-pointer"
             >
-              Symptom Assessment
+              {mobileDrawerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-          </nav>
-
-          {/* Zone 3: 1-2 primary actions */}
-          <div className="flex items-center gap-3">
-            <NeuButton size="sm" onClick={() => onNavigate('sign-in')}>
-              Sign In
-            </NeuButton>
-            <NeuButton variant="primary" size="sm" onClick={onBookAppointmentClick}>
-              Book Appointment
-            </NeuButton>
           </div>
+
+          {/* Mobile Hamburger Menu Dropdown */}
+          {mobileDrawerOpen && (
+            <div className="md:hidden mt-3 pt-3 border-t border-black/5 space-y-3">
+              <nav className="flex flex-col space-y-1 text-sm font-semibold text-[#172B4D]" aria-label="Mobile public navigation">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onNavigate('landing');
+                    setTimeout(() => {
+                      const el = document.getElementById('overview');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      else window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 30);
+                  }}
+                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
+                >
+                  Overview
+                </button>
+                <a
+                  href="#departments"
+                  onClick={(e) => {
+                    setMobileDrawerOpen(false);
+                    if (currentScreen !== 'landing') {
+                      e.preventDefault();
+                      onNavigate('landing');
+                      setTimeout(() => {
+                        document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 50);
+                    }
+                  }}
+                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors"
+                >
+                  Departments
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onNavigate('telehealth-assessment');
+                  }}
+                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
+                >
+                  Symptom Assessment
+                </button>
+              </nav>
+
+              <div className="flex flex-col gap-2.5 pt-2 border-t border-black/5">
+                <NeuButton
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onNavigate('sign-in');
+                  }}
+                >
+                  Sign In
+                </NeuButton>
+                <NeuButton
+                  variant="primary"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    onBookAppointmentClick();
+                  }}
+                >
+                  Book Appointment
+                </NeuButton>
+              </div>
+            </div>
+          )}
         </header>
 
-        <main className="relative isolate overflow-hidden flex-1 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_85%_82%,rgba(22,134,92,0.10),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
-          {/* Designed Architectural Clinical Background Layer */}
-          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
-            {/* Precision Clinical Coordinate Grid */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(23,43,77,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(23,43,77,0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_90%_85%_at_50%_35%,#000_55%,transparent_100%)]" />
-
-            {/* Soft Ambient Light Accents */}
-            <div className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[#3478F6]/12 blur-3xl" />
-            <div className="absolute top-[28%] -right-28 w-[440px] h-[440px] rounded-full bg-[#60A5FA]/14 blur-3xl" />
-            <div className="absolute -bottom-28 left-[22%] w-[520px] h-[360px] rounded-full bg-[#16865C]/8 blur-3xl" />
-
-            {/* Subtle Architectural Contour Rings & Medical Crosshair Accents */}
-            <svg
-              className="absolute top-0 right-0 w-[680px] h-[680px] text-[#3478F6]/[0.07] -translate-y-1/4 translate-x-1/5"
-              viewBox="0 0 600 600"
-              fill="none"
-            >
-              <circle cx="300" cy="300" r="140" stroke="currentColor" strokeWidth="1.25" strokeDasharray="6 6" />
-              <circle cx="300" cy="300" r="210" stroke="currentColor" strokeWidth="1.25" />
-              <circle cx="300" cy="300" r="280" stroke="currentColor" strokeWidth="1" strokeDasharray="3 8" />
-              <path d="M300 10V590M10 300H590" stroke="currentColor" strokeWidth="0.75" />
-            </svg>
-
-            <svg
-              className="absolute bottom-8 left-0 w-[560px] h-[320px] text-[#172B4D]/[0.045] -translate-x-16"
-              viewBox="0 0 560 320"
-              fill="none"
-            >
-              <path
-                d="M0 240 C 140 160, 260 290, 400 190 C 470 140, 520 165, 560 120"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M0 280 C 150 200, 280 310, 420 220 C 485 175, 525 195, 560 155"
-                stroke="currentColor"
-                strokeWidth="1"
-                strokeDasharray="4 6"
-              />
-            </svg>
-          </div>
+        <main className="relative isolate overflow-hidden flex-1 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.16),transparent_65%),radial-gradient(ellipse_70%_50%_at_85%_48%,rgba(96,165,250,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_82%_85%,rgba(22,134,92,0.12),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
+          {renderClinicalMainBackground()}
           {children}
         </main>
       </div>
@@ -243,10 +336,10 @@ export const AppShell: React.FC<AppShellProps> = ({
   const navItems = getRoleNavItems();
 
   return (
-    <div className="min-h-screen flex bg-[#E9EEF3] text-[#172B4D]">
+    <div className="min-h-screen flex bg-transparent text-[#172B4D]">
       {/* Desktop Collapsible Left Sidebar */}
       <aside
-        className={`hidden md:flex flex-col justify-between sticky top-0 h-screen overflow-y-auto border-r border-black/5 bg-[#E9EEF3] transition-all shrink-0 ${
+        className={`hidden md:flex flex-col justify-between sticky top-0 h-screen overflow-y-auto border-r border-black/5 bg-[#E2E9F2]/85 backdrop-blur-md transition-all shrink-0 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } p-4`}
         aria-label="Role navigation sidebar"
@@ -311,7 +404,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Main Content Column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navigation Bar */}
-        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-30 bg-[#E2E9F2]/80 backdrop-blur-md border-b border-black/5 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -351,38 +444,72 @@ export const AppShell: React.FC<AppShellProps> = ({
                 <div className="absolute right-0 mt-2 w-80 neu-raised-lg rounded-2xl p-4 z-50 space-y-3">
                   <div className="flex items-center justify-between border-b border-black/5 pb-2">
                     <span className="text-xs font-bold text-[#172B4D]">
-                      Notifications ({unreadCount} Unread)
+                      {unreadCount > 0 ? `Notifications (${unreadCount} Unread)` : 'Notifications'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNotifDropdownOpen(false);
-                        if (currentRole === 'patient') onNavigate('patient-notifications');
-                        else if (currentRole === 'doctor') onNavigate('doctor-notifications');
-                      }}
-                      className="text-[11px] text-[#3478F6] font-semibold hover:underline cursor-pointer"
-                    >
-                      View All
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            roleNotifications.forEach((n) => {
+                              if (!n.read) onMarkNotificationRead(n.id);
+                            });
+                          }}
+                          className="text-[11px] text-[#16865C] font-semibold hover:underline cursor-pointer"
+                        >
+                          Mark All Read
+                        </button>
+                      )}
+                      {(currentRole === 'patient' || currentRole === 'doctor') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNotifDropdownOpen(false);
+                            if (currentRole === 'patient') onNavigate('patient-notifications');
+                            else if (currentRole === 'doctor') onNavigate('doctor-notifications');
+                          }}
+                          className="text-[11px] text-[#3478F6] font-semibold hover:underline cursor-pointer"
+                        >
+                          View All
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                     {roleNotifications.length === 0 ? (
                       <div className="neu-inset-sm rounded-xl p-4 text-center text-xs text-[#64748B]">
                         No notifications for your account yet.
                       </div>
                     ) : (
-                      roleNotifications.slice(0, 4).map((n) => (
+                      roleNotifications.map((n) => (
                         <div
                           key={n.id}
                           onClick={() => {
-                            onMarkNotificationRead(n.id);
-                            setNotifDropdownOpen(false);
-                            if (currentRole === 'patient') onNavigate('patient-notifications');
-                            if (currentRole === 'doctor') onNavigate('doctor-notifications');
+                            if (!n.read) {
+                              onMarkNotificationRead(n.id);
+                            }
                           }}
-                          className="neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40"
+                          className={`neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40 transition-all ${
+                            !n.read ? 'border-l-4 border-l-[#3478F6]' : 'opacity-80'
+                          }`}
                         >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                !n.read
+                                  ? 'bg-[#3478F6]/15 text-[#3478F6]'
+                                  : 'bg-[#16865C]/15 text-[#16865C]'
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  !n.read ? 'bg-[#3478F6]' : 'bg-[#16865C]'
+                                }`}
+                              />
+                              {!n.read ? 'Unread Notification' : 'Read Status'}
+                            </span>
+                          </div>
                           <div className="font-bold text-[#172B4D]">{n.title}</div>
                           <p className="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">{n.message}</p>
                         </div>
@@ -463,7 +590,8 @@ export const AppShell: React.FC<AppShellProps> = ({
         )}
 
         {/* Main Viewport Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto">
+        <main className="relative isolate overflow-hidden flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.16),transparent_65%),radial-gradient(ellipse_70%_50%_at_85%_48%,rgba(96,165,250,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_82%_85%,rgba(22,134,92,0.12),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
+          {renderClinicalMainBackground()}
           {children}
         </main>
       </div>
