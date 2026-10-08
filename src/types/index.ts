@@ -20,6 +20,7 @@ export type ScreenId =
   | 'patient-profile'
   | 'medical-information'
   | 'patient-notifications'
+  | 'patient-receipts'
   | 'telehealth-assessment'
   // DOCTOR
   | 'doctor-dashboard'
@@ -31,6 +32,7 @@ export type ScreenId =
   | 'blocked-dates-leave'
   | 'doctor-profile'
   | 'doctor-notifications'
+  | 'doctor-receipts'
   // ADMIN
   | 'admin-dashboard'
   | 'patient-management'
@@ -38,10 +40,12 @@ export type ScreenId =
   | 'doctor-management'
   | 'admin-doctor-details'
   | 'appointment-management'
+  | 'physician-leave-approvals'
   | 'calendar-scheduling-management'
   | 'departments-appointment-types'
   | 'notification-system-settings'
-  | 'audit-log';
+  | 'audit-log'
+  | 'admin-receipts';
 
 export type AppointmentStatus =
   | 'Pending'
@@ -98,7 +102,9 @@ export interface DoctorProfile {
   contactNumber: string;
   bio: string;
   consultationFeeLabel: string;
-  status: 'Active' | 'On Leave' | 'Inactive';
+  status: 'Active' | 'On Leave' | 'Inactive' | 'Resigned';
+  deactivatedAt?: string;
+  deactivationReason?: string;
   workingDays: string[]; // ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
   morningHours: { start: string; end: string }; // '07:00' - '11:00'
   afternoonHours: { start: string; end: string }; // '13:00' - '17:00'
@@ -150,7 +156,8 @@ export interface DoctorScheduleBlock {
   slotStartTime?: string;
   slotEndTime?: string;
   reason: string;
-  status: 'Approved' | 'Pending Approval';
+  status: 'Approved' | 'Pending Approval' | 'Rejected';
+  rejectionReason?: string;
   createdAt: string;
 }
 
@@ -158,6 +165,9 @@ export interface DoctorSchedule {
   doctorId: string;
   timezone: string;
   workingDays: string[];
+  pendingWorkingDays?: string[];
+  workingDaysApprovalStatus?: 'Approved' | 'Pending Approval' | 'Rejected';
+  workingDaysRejectionReason?: string;
   morningStart: string;
   morningEnd: string;
   lunchBreakStart: string;
@@ -199,6 +209,11 @@ export interface Appointment {
   rescheduleReason?: string;
   doctorInternalNotes?: string;
   consultationSummary?: string;
+  delayMinutes?: number;
+  estimatedStartTime?: string;
+  delayReason?: string;
+  delayNotifiedAt?: string;
+  patientDelayDecision?: 'waiting' | 'rescheduled';
   createdAt: string;
   updatedAt: string;
   isDemoData: boolean;
@@ -211,6 +226,7 @@ export type NotificationType =
   | 'Appointment Rescheduling'
   | 'Appointment Cancellation'
   | 'Upcoming Appointment Reminder'
+  | 'Consultation Queue Delay'
   | 'Doctor Schedule Change'
   | 'Account & Profile';
 
@@ -227,12 +243,38 @@ export interface NotificationItem {
   createdAt: string;
 }
 
+export interface RandomForestClientResult {
+  predictedDepartmentId: string;
+  predictedDepartmentName: string;
+  recommendedDoctorId: string;
+  recommendedDoctorName: string;
+  recommendedDoctorTitle: string;
+  recommendedDoctorSpecialty: string;
+  confidencePercent: number;
+  urgencyLevel: 'Routine' | 'Prompt Consultation Recommended' | 'Urgent Evaluation Advised';
+  treeVotes: Record<string, number>;
+  totalTrees: number;
+  topFeatures: Array<{ feature: string; importance: number }>;
+}
+
+export interface AssessmentClinicalReport {
+  isMedicalTopic: boolean;
+  hasEnoughInfo: boolean;
+  chiefSymptoms: string[];
+  recommendedActions: string[];
+  risksIfIgnored: string[];
+  firstAidSteps: string[];
+  doctorRecommendationReason: string;
+  randomForest: RandomForestClientResult;
+}
+
 export interface AssessmentMessage {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
   followUpOptions?: string[];
+  clinicalReport?: AssessmentClinicalReport;
 }
 
 export interface AssessmentSummary {

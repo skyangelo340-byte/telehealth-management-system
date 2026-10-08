@@ -18,7 +18,29 @@ import {
   Video,
   Copy,
   ExternalLink,
+  Pill,
+  Printer,
+  Download,
+  MoreVertical,
+  Image as ImageIcon,
+  Sparkles,
+  HeartPulse,
+  Stethoscope,
+  Loader2,
+  Code2,
+  Activity,
 } from 'lucide-react';
+import { PrescriptionPdfModal } from '../../components/ui/PrescriptionPdfModal';
+import {
+  analyzeSymptomConversation,
+  GOOGLE_COLAB_NOTEBOOK_PYTHON,
+} from '../../services/symptomTriageService';
+import {
+  buildResetaPdfDocument,
+  triggerPdfPrint,
+  downloadResetaAsImage,
+  triggerDomPrintReseta,
+} from '../../utils/prescriptionPdf';
 import {
   PatientProfile,
   Appointment,
@@ -56,6 +78,7 @@ interface PatientPortalPagesProps {
   onMarkAllNotificationsRead: () => void;
   assessments: AssessmentSummary[];
   onAddAssessmentSummary: (summary: AssessmentSummary) => void;
+  onAcknowledgeDelayWait?: (aptId: string) => void;
 }
 
 export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
@@ -73,6 +96,7 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
   onMarkAllNotificationsRead,
   assessments,
   onAddAssessmentSummary,
+  onAcknowledgeDelayWait,
 }) => {
   // Filter appointments for this patient
   const myAppointments = useMemo(
@@ -97,8 +121,13 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
   const nextAppointment = upcomingAppointments[0] || null;
 
   const myNotifications = useMemo(
-    () => notifications.filter((n) => n.recipientRole === 'patient'),
-    [notifications]
+    () =>
+      notifications.filter(
+        (n) =>
+          n.recipientRole === 'patient' &&
+          (n.recipientId === patientProfile.id || n.recipientId === patientProfile.userId)
+      ),
+    [notifications, patientProfile.id, patientProfile.userId]
   );
 
   // My Appointments filter state
@@ -108,22 +137,28 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
   // Profile form state
   const [profileForm, setProfileForm] = useState<PatientProfile>(patientProfile);
   const [profileSavedToast, setProfileSavedToast] = useState(false);
+  const [rxPdfModalOpen, setRxPdfModalOpen] = useState(false);
+  const [rxActionMenuOpen, setRxActionMenuOpen] = useState(false);
+  const [rxHeaderMenuOpen, setRxHeaderMenuOpen] = useState(false);
+  const [patientRxFilter, setPatientRxFilter] = useState<'ALL' | 'ISSUED' | 'PENDING'>('ALL');
 
   // Optional TeleHealth Assessment conversational state
   const [chatMessages, setChatMessages] = useState<AssessmentMessage[]>([
     {
       id: 'm-1',
       sender: 'assistant',
-      text: 'Welcome to the Optional TeleHealth Pre-Consultation Symptom Intake. Describe your current non-emergency symptoms or select a prompt below so we can help organize an intake summary for your physician.',
-      timestamp: '08:30 AM',
+      text: 'Maligayang pagdating sa TeleHealth Pre-Consultation Symptom Assessment. Ibahagi ang iyong nararamdamang sintomas, ilang araw na ito, at gaano kalala. Tandaan: Mga tanong na may kinalaman sa kalusugan at panggagamot lamang ang sinasagot ng AI Assistant na ito.',
+      timestamp: 'Just now',
       followUpOptions: [
-        'Mild morning headache & blood pressure check',
-        'Seasonal skin rash / eczema flare-up',
-        'Lower molar sensitivity to cold drinks',
+        'Masakit ang ulo sa umaga at 150/95 ang BP ko',
+        'May makating pantal / rash sa braso nang 3 araw',
+        'Nangingilo at sumasakit ang bagang kapag umiinom ng malamig',
+        'May lagnat at ubo na 2 araw na',
       ],
     },
   ]);
   const [chatInput, setChatInput] = useState('');
+  const [isAnalyzingChat, setIsAnalyzingChat] = useState(false);
   const [shareAssessmentWithDoc, setShareAssessmentWithDoc] = useState(true);
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -135,6 +170,295 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
     setProfileSavedToast(true);
     setTimeout(() => setProfileSavedToast(false), 3500);
   };
+
+  // SCREEN 12B: PATIENT PRESCRIPTIONS (RESETA / E-RX)
+  if (currentScreen === 'patient-receipts') {
+    const activeRxApt =
+      (selectedAppointment && selectedAppointment.patientId === patientProfile.id
+        ? selectedAppointment
+        : null) || myAppointments[0] || null;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[#172B4D]">
+              Medical Prescriptions (Reseta / e-Rx)
+            </h1>
+            <p className="text-xs text-[#64748B]">
+              Official physician-issued medical prescriptions, dosage instructions, and clinical treatment orders.
+            </p>
+          </div>
+        </div>
+
+        <PrescriptionPdfModal
+          open={rxPdfModalOpen}
+          onClose={() => setRxPdfModalOpen(false)}
+          appointment={activeRxApt}
+        />
+
+        {myAppointments.length === 0 ? (
+          <NeuCard className="text-center py-12 space-y-3">
+            <Pill className="w-8 h-8 text-[#64748B] mx-auto" />
+            <div className="text-base font-bold text-[#172B4D]">No Medical Prescriptions Yet</div>
+            <p className="text-xs text-[#64748B] max-w-md mx-auto">
+              Your attending physician’s digital reseta (e-Rx) and medication instructions will appear here after your consultation.
+            </p>
+            <NeuButton variant="primary" onClick={() => onNavigate('book-appointment')}>
+              Book an Appointment
+            </NeuButton>
+          </NeuCard>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* LEFT COLUMN (CSS Selector 1): Patient Prescription Filter & Selector List */}
+            <div className="lg:col-span-4 space-y-3">
+              <NeuCard size="sm" className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-[#172B4D]">My Prescriptions (e-Rx)</span>
+                  <span className="font-mono-tabular font-semibold text-[#3478F6]">
+                    {myAppointments.length} Total
+                  </span>
+                </div>
+                <div className="neu-inset p-1 rounded-xl grid grid-cols-3 gap-1 text-[11px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setPatientRxFilter('ALL')}
+                    className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+                      patientRxFilter === 'ALL'
+                        ? 'bg-[#3478F6] text-white'
+                        : 'text-[#64748B] hover:text-[#172B4D]'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPatientRxFilter('ISSUED')}
+                    className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+                      patientRxFilter === 'ISSUED'
+                        ? 'bg-[#16865C] text-white'
+                        : 'text-[#64748B] hover:text-[#172B4D]'
+                    }`}
+                  >
+                    Issued ℞
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPatientRxFilter('PENDING')}
+                    className={`py-1.5 rounded-lg transition-all cursor-pointer ${
+                      patientRxFilter === 'PENDING'
+                        ? 'bg-[#C68117] text-white'
+                        : 'text-[#64748B] hover:text-[#172B4D]'
+                    }`}
+                  >
+                    Awaiting
+                  </button>
+                </div>
+              </NeuCard>
+
+              <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1.5">
+                {myAppointments
+                  .filter((apt) => {
+                    const hasRx = Boolean(apt.consultationSummary && apt.consultationSummary.trim());
+                    if (patientRxFilter === 'ISSUED') return hasRx;
+                    if (patientRxFilter === 'PENDING') return !hasRx;
+                    return true;
+                  })
+                  .map((apt) => {
+                    const isSelected = activeRxApt?.id === apt.id;
+                    const hasRx = Boolean(apt.consultationSummary && apt.consultationSummary.trim());
+                    return (
+                      <NeuCard
+                        key={apt.id}
+                        size="sm"
+                        onClick={() => onSelectAppointment(apt)}
+                        className={`cursor-pointer transition-all space-y-1.5 ${
+                          isSelected
+                            ? 'border-2 border-[#3478F6] bg-white/45'
+                            : 'hover:bg-white/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-mono-tabular font-bold text-[#3478F6]">
+                            RX-{apt.referenceNumber}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                              hasRx
+                                ? 'bg-[#16865C]/15 text-[#16865C]'
+                                : 'bg-[#C68117]/15 text-[#C68117]'
+                            }`}
+                          >
+                            {hasRx ? '✓ Ready to Print' : '• Awaiting Doctor'}
+                          </span>
+                        </div>
+                        <div className="text-sm font-bold text-[#172B4D]">{apt.doctorName}</div>
+                        <div className="text-xs text-[#64748B]">{apt.departmentName}</div>
+                        <div className="text-xs font-mono-tabular text-[#16865C] font-semibold">
+                          {formatReadableDate(apt.date)} · {apt.timeLabel}
+                        </div>
+                      </NeuCard>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN (CSS Selector 2): Designed Clinical Reseta Document Sheet */}
+            <div className="lg:col-span-8">
+              {activeRxApt && (
+                <NeuCard size="lg" className="space-y-5 border border-[#3478F6]/20">
+                  <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-black/10">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl neu-btn-primary flex items-center justify-center text-2xl font-serif font-extrabold italic shrink-0">
+                        ℞
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[#3478F6]">
+                          TeleHealth Medical Center · Official Medical Prescription (Reseta)
+                        </div>
+                        <h2 className="text-xl font-extrabold text-[#172B4D] font-mono-tabular mt-0.5">
+                          RX-{activeRxApt.referenceNumber}
+                        </h2>
+                        <p className="text-xs text-[#64748B] mt-0.5">
+                          Consultation Date: {formatReadableDate(activeRxApt.date)} ({activeRxApt.timeLabel})
+                        </p>
+                      </div>
+                    </div>
+                    <StatusIndicator status={activeRxApt.status} />
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                          Patient Information
+                        </div>
+                        <div className="text-sm font-extrabold text-[#172B4D]">
+                          {activeRxApt.patientName}
+                        </div>
+                        <div className="text-[#64748B] font-mono-tabular">
+                          DOB: {activeRxApt.patientDob} · Sex: {activeRxApt.patientSex}
+                        </div>
+                        <div className="text-[#C63D4D] font-bold">
+                          Allergies: {activeRxApt.knownAllergiesSnapshot || 'None reported'}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                          Prescribing Physician
+                        </div>
+                        <div className="text-sm font-extrabold text-[#172B4D]">
+                          {activeRxApt.doctorName}
+                        </div>
+                        <div className="text-[#3478F6] font-semibold">
+                          {activeRxApt.departmentName} · {activeRxApt.appointmentTypeName}
+                        </div>
+                        <div className="text-[#64748B] font-mono-tabular">
+                          Consultation: {formatReadableDate(activeRxApt.date)} ({activeRxApt.timeLabel})
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="neu-inset rounded-2xl p-5 border border-[#3478F6]/25 space-y-4 text-xs">
+                      <div className="flex items-center justify-between border-b border-black/10 pb-2.5">
+                        <span className="font-extrabold text-[#172B4D] flex items-center gap-2">
+                          <span className="text-2xl font-serif italic text-[#3478F6]">℞</span>
+                          <span>PRESCRIBED MEDICATIONS &amp; SIG. INSTRUCTIONS (RESETA)</span>
+                        </span>
+                        <span className="font-mono-tabular text-[11px] text-[#16865C] font-bold">
+                          {activeRxApt.consultationSummary ? 'Verified Physician e-Rx' : 'Awaiting Doctor Issuance'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-[11px] font-bold uppercase text-[#3478F6]">
+                            1. Active Medication Regimen on File:
+                          </div>
+                          <div className="text-sm font-bold text-[#172B4D] mt-1">
+                            {activeRxApt.currentMedicationsSnapshot ||
+                              'As directed by attending physician during consultation.'}
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-black/5">
+                          <div className="text-[11px] font-bold uppercase text-[#3478F6]">
+                            2. Physician Prescription Orders &amp; Dosage Schedule (Sig.):
+                          </div>
+                          <div className="text-xs font-mono-tabular text-[#172B4D] mt-1.5 leading-relaxed whitespace-pre-line neu-raised-sm rounded-xl p-3.5">
+                            {activeRxApt.consultationSummary ||
+                              'Your attending physician has not finalized the post-consultation Reseta yet. Once the consultation is marked Completed, your full medication and dosage instructions will appear here.'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                          <NeuButton
+                            size="sm"
+                            aria-label="Prescription Download & Print Options"
+                            title="More Options: Download (as Image) or Print (DOMPDF)"
+                            onClick={() => setRxActionMenuOpen((prev) => !prev)}
+                            className="px-3"
+                          >
+                            <MoreVertical className="w-4 h-4 text-[#172B4D]" />
+                          </NeuButton>
+
+                          {rxActionMenuOpen && (
+                            <div className="absolute right-0 bottom-full mb-2 w-56 neu-raised rounded-2xl p-2 z-30 border border-[#3478F6]/20 space-y-1 shadow-lg">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRxActionMenuOpen(false);
+                                  downloadResetaAsImage({ appointment: activeRxApt });
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#172B4D] hover:bg-[#3478F6]/10 transition-colors cursor-pointer text-left"
+                              >
+                                <ImageIcon className="w-4 h-4 text-[#3478F6] shrink-0" />
+                                <div>
+                                  <div>Download (as Image)</div>
+                                  <div className="text-[10px] font-normal text-[#64748B]">
+                                    Save Reseta PNG image
+                                  </div>
+                                </div>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRxActionMenuOpen(false);
+                                  const pdfDoc = buildResetaPdfDocument({
+                                    appointment: activeRxApt,
+                                  });
+                                  pdfDoc.save(`Reseta-RX-${activeRxApt.referenceNumber}.pdf`);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#172B4D] hover:bg-[#3478F6]/10 transition-colors cursor-pointer text-left"
+                              >
+                                <Download className="w-4 h-4 text-[#16865C] shrink-0" />
+                                <div>
+                                  <div>Save as PDF</div>
+                                  <div className="text-[10px] font-normal text-[#64748B]">
+                                    Download official Reseta PDF
+                                  </div>
+                                </div>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </NeuCard>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // SCREEN 12: MY APPOINTMENTS
   if (currentScreen === 'my-appointments') {
@@ -254,9 +578,57 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
                       {apt.doctorName}
                     </div>
 
-                    <div className="text-xs text-[#64748B] font-mono-tabular">
-                      {formatReadableDate(apt.date)} · {apt.timeLabel}
+                    <div className="text-xs text-[#64748B] font-mono-tabular flex flex-wrap items-center gap-2">
+                      <span>
+                        {formatReadableDate(apt.date)} · {apt.timeLabel}
+                      </span>
+                      {apt.delayMinutes ? (
+                        <span className="px-2 py-0.5 rounded-md bg-[#C68117]/15 text-[#C68117] font-bold">
+                          ⏳ Queue Delay +{apt.delayMinutes}m · Est. Start: {apt.estimatedStartTime}
+                        </span>
+                      ) : null}
+                      {apt.patientDelayDecision === 'waiting' && (
+                        <span className="px-2 py-0.5 rounded-md bg-[#16865C]/15 text-[#16865C] font-bold">
+                          ✓ Priority Queue Confirmed
+                        </span>
+                      )}
                     </div>
+
+                    {apt.delayMinutes ? (
+                      <div className="p-3 rounded-xl bg-[#C68117]/10 border border-[#C68117]/30 space-y-2 text-xs mt-1">
+                        <div className="font-bold text-[#9A5B08] flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          <span>
+                            Paumanhin: Lumagpas sa oras ang naunang pasyente (+{apt.delayMinutes} mins). Bagong Estimated Start Time: {apt.estimatedStartTime}
+                          </span>
+                        </div>
+                        {apt.delayReason && (
+                          <p className="text-[11px] text-[#475569]">{apt.delayReason}</p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                          {apt.patientDelayDecision === 'waiting' ? (
+                            <span className="text-[11px] font-bold text-[#16865C]">
+                              ✓ Naka-confirm na maghihintay ka sa Priority Queue ({apt.estimatedStartTime})
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onAcknowledgeDelayWait?.(apt.id)}
+                              className="px-3 py-1 rounded-lg bg-[#16865C] text-white text-[11px] font-bold hover:opacity-90 cursor-pointer"
+                            >
+                              Stay in Priority Queue (Wait until {apt.estimatedStartTime})
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onOpenRescheduleModal(apt)}
+                            className="px-3 py-1 rounded-lg bg-white text-[#3478F6] border border-[#3478F6]/30 text-[11px] font-bold hover:bg-[#3478F6]/10 cursor-pointer"
+                          >
+                            Free Priority Reschedule
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
 
                     <p className="text-xs text-[#64748B] line-clamp-1">
                       Reason: <span className="text-[#172B4D]">{apt.reasonForVisit}</span>
@@ -402,6 +774,11 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
               <div className="text-sm font-bold font-mono-tabular text-[#16865C] mt-0.5">
                 {apt.timeLabel}
               </div>
+              {apt.delayMinutes ? (
+                <div className="text-[11px] font-bold text-[#C68117] mt-0.5">
+                  Est. Start: {apt.estimatedStartTime} (+{apt.delayMinutes}m)
+                </div>
+              ) : null}
             </div>
             <div className="neu-inset rounded-xl p-3.5">
               <div className="text-[#64748B]">Consultation Type</div>
@@ -416,6 +793,42 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
               </div>
             </div>
           </div>
+
+          {apt.delayMinutes ? (
+            <div className="neu-inset rounded-2xl p-4 space-y-2.5 border border-[#C68117]/40 bg-[#C68117]/5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-[#9A5B08] font-extrabold">
+                  <Clock className="w-4 h-4 shrink-0" />
+                  <span>
+                    Consultation Queue Delay Notice (+{apt.delayMinutes} mins) — Bagong Estimated Start: {apt.estimatedStartTime}
+                  </span>
+                </div>
+                {apt.patientDelayDecision === 'waiting' && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#16865C]/15 text-[#16865C] font-bold text-[11px]">
+                    ✓ Waiting in Priority Queue
+                  </span>
+                )}
+              </div>
+              <p className="text-[#475569]">
+                {apt.delayReason ||
+                  `Ang naunang pasyente ni ${apt.doctorName} ay lumagpas sa oras. Maaari kang manatili sa Priority Queue o mag-Free Reschedule.`}
+              </p>
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                {apt.patientDelayDecision !== 'waiting' && (
+                  <NeuButton
+                    size="sm"
+                    variant="primary"
+                    onClick={() => onAcknowledgeDelayWait?.(apt.id)}
+                  >
+                    Stay in Priority Queue (Wait until {apt.estimatedStartTime})
+                  </NeuButton>
+                )}
+                <NeuButton size="sm" onClick={() => onOpenRescheduleModal(apt)}>
+                  Free Priority Reschedule
+                </NeuButton>
+              </div>
+            </div>
+          ) : null}
 
           {/* Online Appointment — Google Meet Link Box */}
           {(apt.consultationMode || 'Online Appointment') === 'Online Appointment' && (
@@ -561,29 +974,11 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[#172B4D]">
-              {currentScreen === 'medical-information'
-                ? 'Medical Information & Clinical History'
-                : 'Patient Profile & Personal Information'}
+              Patient Profile &amp; Medical Information
             </h1>
             <p className="text-xs text-[#64748B]">
               Protected by server-side authorization. Changes saved here automatically prefill future appointment bookings.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <NeuButton
-              size="sm"
-              variant={currentScreen === 'patient-profile' ? 'primary' : 'default'}
-              onClick={() => onNavigate('patient-profile')}
-            >
-              Personal & Contact
-            </NeuButton>
-            <NeuButton
-              size="sm"
-              variant={currentScreen === 'medical-information' ? 'primary' : 'default'}
-              onClick={() => onNavigate('medical-information')}
-            >
-              Medical Information
-            </NeuButton>
           </div>
         </div>
 
@@ -603,16 +998,20 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
               <NeuInput
                 label="Full Name"
                 required
+                placeholder="e.g., Juan Dela Cruz"
                 value={profileForm.fullName}
                 onChange={(e) => setProfileForm((p) => ({ ...p, fullName: e.target.value }))}
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
               <NeuInput
                 label="Date of Birth"
                 type="date"
                 required
                 max={DEMO_TODAY}
+                placeholder="e.g., 1995-08-14"
                 value={profileForm.dateOfBirth}
                 onChange={(e) => setProfileForm((p) => ({ ...p, dateOfBirth: e.target.value }))}
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
                 rightElement={
                   age !== null ? (
                     <span className="text-xs font-mono-tabular text-[#3478F6] font-semibold">
@@ -623,10 +1022,12 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
               />
               <NeuSelect
                 label="Sex"
-                value={profileForm.sex}
+                placeholder="e.g., Select Sex (Female / Male)"
+                value={profileForm.sex || ''}
                 onChange={(e) =>
                   setProfileForm((p) => ({ ...p, sex: e.target.value as PatientProfile['sex'] }))
                 }
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
                 options={[
                   { value: 'Female', label: 'Female' },
                   { value: 'Male', label: 'Male' },
@@ -637,22 +1038,28 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
               <NeuInput
                 label="Contact Number"
                 required
+                placeholder="e.g., +63 917 123 4567"
                 value={profileForm.contactNumber}
                 onChange={(e) => setProfileForm((p) => ({ ...p, contactNumber: e.target.value }))}
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
               <NeuInput
                 label="Verified Email Address"
                 type="email"
                 required
+                placeholder="e.g., juan.delacruz@email.com"
                 value={profileForm.email}
                 onChange={(e) => setProfileForm((p) => ({ ...p, email: e.target.value }))}
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
               <NeuInput
                 label="Emergency Contact Name & Phone"
+                placeholder="e.g., Maria Dela Cruz — +63 918 765 4321"
                 value={profileForm.emergencyContactName || ''}
                 onChange={(e) =>
                   setProfileForm((p) => ({ ...p, emergencyContactName: e.target.value }))
                 }
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
             </div>
           </NeuCard>
@@ -665,32 +1072,40 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
               <NeuTextarea
                 label="Known Allergies"
                 rows={2}
+                placeholder="e.g., Penicillin, Ibuprofen, Shellfish (or type 'None' if no known allergies)"
                 value={profileForm.knownAllergies}
                 onChange={(e) => setProfileForm((p) => ({ ...p, knownAllergies: e.target.value }))}
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
               <NeuTextarea
                 label="Current Medications"
                 rows={2}
+                placeholder="e.g., Amlodipine 5mg once daily, Metformin 500mg twice daily (or 'None')"
                 value={profileForm.currentMedications}
                 onChange={(e) =>
                   setProfileForm((p) => ({ ...p, currentMedications: e.target.value }))
                 }
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
               <NeuTextarea
                 label="Existing Medical Conditions"
                 rows={2}
+                placeholder="e.g., Mild Hypertension, Type 2 Diabetes, Bronchial Asthma (or 'None')"
                 value={profileForm.existingMedicalConditions}
                 onChange={(e) =>
                   setProfileForm((p) => ({ ...p, existingMedicalConditions: e.target.value }))
                 }
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
               <NeuTextarea
                 label="Previous Medical History"
                 rows={2}
+                placeholder="e.g., Appendectomy (2019), Annual physical exam normal (2025)"
                 value={profileForm.previousMedicalHistory || ''}
                 onChange={(e) =>
                   setProfileForm((p) => ({ ...p, previousMedicalHistory: e.target.value }))
                 }
+                className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
             </div>
 
@@ -722,52 +1137,90 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
         </div>
 
         <div className="space-y-3">
-          {myNotifications.map((n) => (
-            <NeuCard
-              key={n.id}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                !n.read ? 'border-l-4 border-l-[#3478F6]' : 'opacity-80'
-              }`}
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs text-[#64748B]">
-                  <span className="font-semibold text-[#3478F6]">{n.type}</span>
-                  <span>·</span>
-                  <span className="font-mono-tabular">
-                    {new Date(n.createdAt).toLocaleString()}
-                  </span>
-                  {!n.read && (
-                    <span className="text-[#16865C] font-bold">· Unread</span>
+          {myNotifications.map((n) => {
+            const targetApt = n.appointmentId
+              ? appointments.find((a) => a.id === n.appointmentId)
+              : undefined;
+            const isDelayNotif =
+              n.type === 'Consultation Queue Delay' || Boolean(targetApt?.delayMinutes);
+
+            return (
+              <NeuCard
+                key={n.id}
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                  !n.read ? 'border-l-4 border-l-[#3478F6]' : 'opacity-80'
+                }`}
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs text-[#64748B]">
+                    <span className="font-semibold text-[#3478F6]">{n.type}</span>
+                    <span>·</span>
+                    <span className="font-mono-tabular">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </span>
+                    {!n.read && (
+                      <span className="text-[#16865C] font-bold">· Unread</span>
+                    )}
+                  </div>
+                  <div className="text-sm font-bold text-[#172B4D]">{n.title}</div>
+                  <p className="text-xs text-[#64748B]">{n.message}</p>
+
+                  {isDelayNotif && targetApt && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                      {targetApt.patientDelayDecision === 'waiting' ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-[#16865C]/15 text-[#16865C] text-[11px] font-bold inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Confirmed: Waiting in Priority Queue ({targetApt.estimatedStartTime})
+                        </span>
+                      ) : (
+                        <NeuButton
+                          size="sm"
+                          variant="primary"
+                          onClick={() => {
+                            onMarkNotificationRead(n.id);
+                            onAcknowledgeDelayWait?.(targetApt.id);
+                          }}
+                        >
+                          Stay in Priority Queue (Wait until {targetApt.estimatedStartTime})
+                        </NeuButton>
+                      )}
+                      <NeuButton
+                        size="sm"
+                        onClick={() => {
+                          onMarkNotificationRead(n.id);
+                          onOpenRescheduleModal(targetApt);
+                        }}
+                      >
+                        Free Priority Reschedule
+                      </NeuButton>
+                    </div>
                   )}
                 </div>
-                <div className="text-sm font-bold text-[#172B4D]">{n.title}</div>
-                <p className="text-xs text-[#64748B]">{n.message}</p>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                {n.appointmentId && (
-                  <NeuButton
-                    size="sm"
-                    onClick={() => {
-                      onMarkNotificationRead(n.id);
-                      const targetApt = appointments.find((a) => a.id === n.appointmentId);
-                      if (targetApt) {
-                        onSelectAppointment(targetApt);
-                        onNavigate('patient-appointment-details');
-                      }
-                    }}
-                  >
-                    Open Appointment
-                  </NeuButton>
-                )}
-                {!n.read && (
-                  <NeuButton size="sm" onClick={() => onMarkNotificationRead(n.id)}>
-                    Mark Read
-                  </NeuButton>
-                )}
-              </div>
-            </NeuCard>
-          ))}
+                <div className="flex items-center gap-2 shrink-0">
+                  {n.appointmentId && (
+                    <NeuButton
+                      size="sm"
+                      onClick={() => {
+                        onMarkNotificationRead(n.id);
+                        if (targetApt) {
+                          onSelectAppointment(targetApt);
+                          onNavigate('patient-appointment-details');
+                        }
+                      }}
+                    >
+                      Open Appointment
+                    </NeuButton>
+                  )}
+                  {!n.read && (
+                    <NeuButton size="sm" onClick={() => onMarkNotificationRead(n.id)}>
+                      Mark Read
+                    </NeuButton>
+                  )}
+                </div>
+              </NeuCard>
+            );
+          })}
         </div>
       </div>
     );
@@ -775,69 +1228,83 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
 
   // OPTIONAL TELEHEALTH ASSESSMENT INTERFACE (SECTION 15)
   if (currentScreen === 'telehealth-assessment') {
-    const handleSendMessage = (textToSend: string) => {
-      if (!textToSend.trim()) return;
+    const handleSendMessage = async (textToSend: string) => {
+      if (!textToSend.trim() || isAnalyzingChat) return;
+      const trimmed = textToSend.trim();
       const userMsg: AssessmentMessage = {
         id: `m-${Date.now()}`,
         sender: 'user',
-        text: textToSend.trim(),
+        text: trimmed,
         timestamp: 'Just now',
       };
 
-      const lower = textToSend.toLowerCase();
-      let replyText =
-        'Thank you for sharing those details. Based on your description, a non-urgent 60-minute General Consultation is appropriate. Would you like to generate a structured intake summary and proceed to Book Appointment?';
-      let dept = 'Internal & General Medicine';
-      let severity: AssessmentSummary['severityLevel'] = 'Routine';
-
-      if (lower.includes('chest') || lower.includes('shortness of breath') || lower.includes('severe')) {
-        replyText =
-          'URGENT CARE GUIDANCE: Symptoms involving chest pressure or acute shortness of breath require immediate in-person emergency evaluation. Do not wait for a scheduled outpatient telehealth slot.';
-        dept = 'Cardiology & Vascular Care';
-        severity = 'Urgent Evaluation Advised';
-      } else if (lower.includes('blood pressure') || lower.includes('headache')) {
-        replyText =
-          'Noted: Mild morning headache alongside home blood pressure tracking. We recommend scheduling a Follow-up Consultation with Cardiology & Vascular Care and bringing your 14-day BP log.';
-        dept = 'Cardiology & Vascular Care';
-        severity = 'Routine';
-      }
-
-      const assistantMsg: AssessmentMessage = {
-        id: `m-${Date.now() + 1}`,
-        sender: 'assistant',
-        text: replyText,
-        timestamp: 'Just now',
-      };
-
-      setChatMessages((prev) => [...prev, userMsg, assistantMsg]);
+      const updatedHistory = [...chatMessages, userMsg];
+      setChatMessages(updatedHistory);
       setChatInput('');
+      setIsAnalyzingChat(true);
 
-      onAddAssessmentSummary({
-        id: `asmt-${Date.now()}`,
-        patientId: patientProfile.id,
-        createdAt: new Date().toISOString(),
-        chiefSymptoms: [textToSend.trim()],
-        duration: 'Reported today',
-        severityLevel: severity,
-        recommendedDepartment: dept,
-        recommendedAppointmentType: 'General Consultation',
-        summaryText: replyText,
-        sharedWithDoctor: shareAssessmentWithDoc,
-      });
+      try {
+        const result = await analyzeSymptomConversation({
+          messages: updatedHistory.map((m) => ({
+            sender: m.sender,
+            text: m.text,
+          })),
+          latestUserMessage: trimmed,
+        });
+
+        const assistantMsg: AssessmentMessage = {
+          id: `m-${Date.now() + 1}`,
+          sender: 'assistant',
+          text: result.replyText,
+          timestamp: 'Just now',
+          followUpOptions: result.followUpOptions,
+          clinicalReport: {
+            isMedicalTopic: result.isMedicalTopic,
+            hasEnoughInfo: result.hasEnoughInfo,
+            chiefSymptoms: result.chiefSymptoms,
+            recommendedActions: result.recommendedActions,
+            risksIfIgnored: result.risksIfIgnored,
+            firstAidSteps: result.firstAidSteps,
+            doctorRecommendationReason: result.doctorRecommendationReason,
+            randomForest: result.randomForest,
+          },
+        };
+
+        setChatMessages((prev) => [...prev, assistantMsg]);
+
+        if (result.isMedicalTopic && result.hasEnoughInfo) {
+          onAddAssessmentSummary({
+            id: `asmt-${Date.now()}`,
+            patientId: patientProfile.id,
+            createdAt: new Date().toISOString(),
+            chiefSymptoms:
+              result.chiefSymptoms.length > 0 ? result.chiefSymptoms : [trimmed],
+            duration: 'Reported today',
+            severityLevel: result.randomForest.urgencyLevel,
+            recommendedDepartment: result.randomForest.predictedDepartmentName,
+            recommendedAppointmentType: 'General Consultation',
+            summaryText: result.replyText,
+            sharedWithDoctor: shareAssessmentWithDoc,
+          });
+        }
+      } finally {
+        setIsAnalyzingChat(false);
+      }
     };
 
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-xs font-semibold text-[#3478F6]">
-              Optional Consultation Guidance · Non-Diagnostic Intake Assistant
+            <div className="text-xs font-semibold text-[#3478F6] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Assistant · Pre-Consultation Medical Guidance</span>
             </div>
             <h1 className="text-2xl font-bold text-[#172B4D]">
               TeleHealth Pre-Visit Symptom Assessment
             </h1>
             <p className="text-xs text-[#64748B]">
-              This guidance tool helps organize your symptoms before booking. It is not a confirmed medical diagnosis.
+              Provides recommended actions, risks if ignored, first-aid (paunang lunas), and specialist doctor matching.
             </p>
           </div>
           <NeuButton
@@ -850,30 +1317,133 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <NeuCard className="lg:col-span-7 flex flex-col justify-between min-h-[420px] space-y-4">
-            <div className="space-y-3 overflow-y-auto max-h-[320px] pr-1">
+          <NeuCard className="lg:col-span-8 flex flex-col justify-between min-h-[480px] space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-black/10 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-1 rounded-lg bg-[#3478F6]/15 text-[#1D4ED8] font-bold inline-flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>AI Assistant</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto max-h-[500px] pr-1">
               {chatMessages.map((m) => (
                 <div
                   key={m.id}
-                  className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
+                  className={`p-4 rounded-2xl text-xs leading-relaxed ${
                     m.sender === 'user'
                       ? 'neu-btn-primary text-white ml-8'
-                      : 'neu-inset text-[#172B4D] mr-6'
+                      : 'neu-inset text-[#172B4D] mr-4'
                   }`}
                 >
-                  <div className="font-bold mb-1">
-                    {m.sender === 'user' ? patientProfile.fullName : 'Clinical Intake Guide'} ·{' '}
-                    <span className="font-normal opacity-75">{m.timestamp}</span>
+                  <div className="font-bold mb-1.5 flex items-center justify-between gap-2">
+                    <span>
+                      {m.sender === 'user'
+                        ? patientProfile.fullName
+                        : 'AI Assistant'}{' '}
+                      · <span className="font-normal opacity-75">{m.timestamp}</span>
+                    </span>
                   </div>
-                  <p>{m.text}</p>
-                  {m.followUpOptions && (
+                  <p className="text-xs sm:text-sm font-medium">{m.text}</p>
+
+                  {m.clinicalReport && !m.clinicalReport.isMedicalTopic && (
+                    <div className="mt-3 p-3 rounded-xl bg-[#C63D4D]/10 border border-[#C63D4D]/30 text-xs text-[#C63D4D] font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>
+                        Paalala: Ang AI Assistant na ito ay para lamang sa mga medikal na sintomas, paunang lunas, at konsultasyon sa doktor.
+                      </span>
+                    </div>
+                  )}
+
+                  {m.clinicalReport &&
+                    m.clinicalReport.isMedicalTopic &&
+                    m.clinicalReport.hasEnoughInfo && (
+                      <div className="mt-4 space-y-3 pt-3 border-t border-black/10 text-xs">
+                        {m.clinicalReport.recommendedActions.length > 0 && (
+                          <div className="p-3 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/25 space-y-1">
+                            <div className="font-extrabold text-[#1D4ED8] flex items-center gap-1.5 uppercase tracking-wide">
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                              <span>1. Rekomendadong Dapat Gawin</span>
+                            </div>
+                            <ul className="space-y-1 pl-5 list-disc text-[#0F172A]">
+                              {m.clinicalReport.recommendedActions.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {m.clinicalReport.risksIfIgnored.length > 0 && (
+                          <div className="p-3 rounded-xl bg-[#C63D4D]/10 border border-[#C63D4D]/25 space-y-1">
+                            <div className="font-extrabold text-[#C63D4D] flex items-center gap-1.5 uppercase tracking-wide">
+                              <AlertTriangle className="w-4 h-4 shrink-0" />
+                              <span>2. Mga Mangyayari Kapag Pinabayaan</span>
+                            </div>
+                            <ul className="space-y-1 pl-5 list-disc text-[#0F172A]">
+                              {m.clinicalReport.risksIfIgnored.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {m.clinicalReport.firstAidSteps.length > 0 && (
+                          <div className="p-3 rounded-xl bg-[#16865C]/10 border border-[#16865C]/25 space-y-1">
+                            <div className="font-extrabold text-[#16865C] flex items-center gap-1.5 uppercase tracking-wide">
+                              <HeartPulse className="w-4 h-4 shrink-0" />
+                              <span>3. Paunang Lunas Habang Hindi Pa Nakakapagpa-Checkup</span>
+                            </div>
+                            <ul className="space-y-1 pl-5 list-disc text-[#0F172A]">
+                              {m.clinicalReport.firstAidSteps.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div className="p-3.5 rounded-xl bg-white/80 border border-[#3478F6]/30 space-y-2.5">
+                          <div className="font-extrabold text-[#172B4D] flex items-center gap-1.5 uppercase tracking-wide">
+                            <Stethoscope className="w-4 h-4 text-[#3478F6]" />
+                            <span>4. Inirerekomendang Doktor at Departamento</span>
+                          </div>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div>
+                              <div className="text-sm font-extrabold text-[#172B4D]">
+                                {m.clinicalReport.randomForest.recommendedDoctorName}
+                              </div>
+                              <div className="text-xs font-bold text-[#3478F6]">
+                                {m.clinicalReport.randomForest.predictedDepartmentName} ·{' '}
+                                {m.clinicalReport.randomForest.recommendedDoctorTitle}
+                              </div>
+                              {m.clinicalReport.doctorRecommendationReason && (
+                                <p className="text-xs text-[#475569] mt-1">
+                                  {m.clinicalReport.doctorRecommendationReason}
+                                </p>
+                              )}
+                            </div>
+                            <NeuButton
+                              size="sm"
+                              variant="primary"
+                              onClick={() => onNavigate('book-appointment')}
+                              icon={<Calendar className="w-3.5 h-3.5" />}
+                            >
+                              Book with {m.clinicalReport.randomForest.recommendedDoctorName}
+                            </NeuButton>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  {m.followUpOptions && m.followUpOptions.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
                       {m.followUpOptions.map((opt) => (
                         <button
                           key={opt}
                           type="button"
+                          disabled={isAnalyzingChat}
                           onClick={() => handleSendMessage(opt)}
-                          className="neu-btn px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#3478F6] cursor-pointer"
+                          className="neu-btn px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#3478F6] cursor-pointer disabled:opacity-50"
                         >
                           {opt}
                         </button>
@@ -882,6 +1452,13 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
                   )}
                 </div>
               ))}
+
+              {isAnalyzingChat && (
+                <div className="p-3.5 rounded-2xl neu-inset text-xs font-semibold text-[#172B4D] mr-8 flex items-center gap-2.5">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#3478F6] shrink-0" />
+                  <span>Sinusuri ng AI Assistant ang iyong sintomas...</span>
+                </div>
+              )}
             </div>
 
             <form
@@ -893,19 +1470,26 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
             >
               <input
                 type="text"
-                placeholder="Describe your symptoms, duration, or questions..."
+                disabled={isAnalyzingChat}
+                placeholder="I-type ang iyong nararamdamang sintomas, ilang araw na, o tanong..."
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 aria-label="Symptom description input"
                 className="neu-inset flex-1 rounded-xl px-3.5 py-2.5 text-xs text-[#172B4D]"
               />
-              <NeuButton type="submit" variant="primary" size="sm" icon={<Send className="w-3.5 h-3.5" />}>
+              <NeuButton
+                type="submit"
+                variant="primary"
+                size="sm"
+                loading={isAnalyzingChat}
+                icon={<Send className="w-3.5 h-3.5" />}
+              >
                 Send
               </NeuButton>
             </form>
           </NeuCard>
 
-          <div className="lg:col-span-5 space-y-4">
+          <div className="lg:col-span-4 space-y-4">
             <NeuCard className="space-y-3">
               <h2 className="text-sm font-bold text-[#172B4D]">
                 Privacy & Doctor Sharing Permission
@@ -1024,8 +1608,55 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
                   <div className="text-xs font-mono-tabular font-semibold text-[#16865C]">
                     {nextAppointment.timeLabel}
                   </div>
+                  {nextAppointment.delayMinutes ? (
+                    <div className="text-[11px] font-mono-tabular font-extrabold text-[#C68117] mt-0.5">
+                      ⏳ Delayed +{nextAppointment.delayMinutes}m → Est. Start: {nextAppointment.estimatedStartTime}
+                    </div>
+                  ) : null}
                 </div>
               </div>
+
+              {nextAppointment.delayMinutes ? (
+                <div className="neu-inset rounded-2xl p-4 border border-[#C68117]/40 bg-[#C68117]/10 space-y-2.5 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-extrabold text-[#9A5B08] flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 shrink-0" />
+                      <span>
+                        Live Queue Alert: Ang naunang pasyente ni {nextAppointment.doctorName} ay lumagpas sa oras (+{nextAppointment.delayMinutes} mins)
+                      </span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-white text-[#9A5B08] font-mono-tabular font-extrabold text-[11px]">
+                      New Est. Start: {nextAppointment.estimatedStartTime}
+                    </span>
+                  </div>
+                  <p className="text-[#475569]">
+                    {nextAppointment.delayReason ||
+                      `Ang iyong ${nextAppointment.timeLabel} appointment ay tinatayang magsisimula nang ${nextAppointment.estimatedStartTime}. Nasa Priority Queue ka pa rin.`}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {nextAppointment.patientDelayDecision === 'waiting' ? (
+                      <span className="px-3 py-1.5 rounded-xl bg-[#16865C]/15 text-[#16865C] font-bold text-xs inline-flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Confirmed: Naghihintay sa Priority Queue ({nextAppointment.estimatedStartTime})
+                      </span>
+                    ) : (
+                      <NeuButton
+                        size="sm"
+                        variant="primary"
+                        onClick={() => onAcknowledgeDelayWait?.(nextAppointment.id)}
+                      >
+                        Stay in Priority Queue (Wait until {nextAppointment.estimatedStartTime})
+                      </NeuButton>
+                    )}
+                    <NeuButton
+                      size="sm"
+                      onClick={() => onOpenRescheduleModal(nextAppointment)}
+                    >
+                      Free Priority Reschedule
+                    </NeuButton>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="text-xs text-[#64748B]">
                 Reference: <strong className="font-mono-tabular text-[#172B4D]">{nextAppointment.referenceNumber}</strong> · Mode: <strong className="text-[#3478F6]">{nextAppointment.consultationMode || 'Online Appointment'}</strong> · Reason: {nextAppointment.reasonForVisit}

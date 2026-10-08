@@ -11,6 +11,9 @@ import {
   ShieldCheck,
   Stethoscope,
   Sparkles,
+  HelpCircle,
+  X,
+  ChevronDown,
 } from 'lucide-react';
 import {
   PatientProfile,
@@ -100,12 +103,98 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [conflictBanner, setConflictBanner] = useState<string | null>(null);
   const [formStep, setFormStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
+  const [hoveredDeptId, setHoveredDeptId] = useState<string | null>(null);
+  const deptDropdownRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (deptDropdownRef.current && !deptDropdownRef.current.contains(event.target as Node)) {
+        setDeptDropdownOpen(false);
+        setHoveredDeptId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const DEPARTMENT_CLINICAL_GUIDE: Record<
+    string,
+    {
+      titleTagalog: string;
+      meaning: string;
+      commonSymptoms: string[];
+      leadDoctor: string;
+    }
+  > = {
+    'dept-cardio': {
+      titleTagalog: 'Sakit sa Puso, Presyon ng Dugo (High Blood), at Ugat',
+      meaning:
+        'Para sa mga pasyenteng may nararamdaman sa puso, mataas na blood pressure (hypertension), mabilis na tibok ng puso, o paninikip ng dibdib.',
+      commonSymptoms: [
+        'Mataas na BP / High Blood Pressure',
+        'Paninikip o kirot sa dibdib (Chest pain)',
+        'Mabilis o hindi normal na tibok ng puso (Palpitations)',
+        'Madaling hingalin o pagkahilo sa umaga',
+      ],
+      leadDoctor: 'Dr. Marcus Vance (Senior Cardiologist)',
+    },
+    'dept-general': {
+      titleTagalog: 'Pangkalahatang Sakit ng Katawan, Lagnat, Ubo, at Primary Care',
+      meaning:
+        'Para sa pangkalahatang check-up ng matatanda, lagnat, trangkaso, ubo, sakit ng ulo, diabetes, pananakit ng tiyan, o kung hindi ka pa sigurado kung anong espesyalista ang kailangan.',
+      commonSymptoms: [
+        'Lagnat, trangkaso, ubo, at sipon',
+        'Sakit ng ulo, hilo, o panghihina ng katawan',
+        'Sakit ng tiyan, sikmura, o hyperacidity',
+        'Diabetes, cholesterol, at annual physical check-up',
+      ],
+      leadDoctor: 'Dr. Hannah Lin (Internal Medicine Physician)',
+    },
+    'dept-dental': {
+      titleTagalog: 'Sakit ng Ngipin, Gilagid, at Bibig (Dentista)',
+      meaning:
+        'Para sa lahat ng problema sa ngipin, bagang, gilagid, pangingilo, pamamaga ng panga, linis ng ngipin (oral prophylaxis), o pasta.',
+      commonSymptoms: [
+        'Masakit o bulok na ngipin / bagang (Toothache / Cavity)',
+        'Nangingilo kapag umiinom ng malamig o mainit',
+        'Namamaga o dumudugong gilagid (Gum bleeding)',
+        'Dental cleaning, pasta, o konsultasyon sa bunot',
+      ],
+      leadDoctor: 'Dr. Julian Thorne (Doctor of Dental Surgery)',
+    },
+    'dept-derma': {
+      titleTagalog: 'Sakit sa Balat, Pantal, Allergy sa Balat, at Mukha (Dermatologist)',
+      meaning:
+        'Para sa mga problema sa balat, anit, at kuko gaya ng makating pantal, rashes, eczema, tigyawat (acne), fungal infection, o skin allergy.',
+      commonSymptoms: [
+        'Makating pantal o pamumula ng balat (Skin rash / Hives)',
+        'Eczema, psoriasis, o sobrang panunuyo ng balat',
+        'Matinding tigyawat (Acne breakout) o peklat sa balat',
+        'Buni, alipunga, o impeksyon sa balat at kuko',
+      ],
+      leadDoctor: 'Dr. Amara Okafor (Consultant Dermatologist)',
+    },
+    'dept-lab': {
+      titleTagalog: 'Laboratory Blood Test, Urinalysis, ECG, at Diagnostic Workup',
+      meaning:
+        'Para sa mga pasyenteng kukuha ng blood test (CBC, Fasting Blood Sugar, Lipid Profile), urinalysis, ECG, o magpapabasa ng resulta ng laboratoryo.',
+      commonSymptoms: [
+        'Routine Blood Chemistry (FBS, Cholesterol, Uric Acid)',
+        'Complete Blood Count (CBC) at Urinalysis',
+        '12-Lead ECG at Pre-Employment / Annual Lab Workup',
+        'Pagpapabasa at interpretasyon ng Lab Results',
+      ],
+      leadDoctor: 'Dr. Hannah Lin (Diagnostic & Lab Services)',
+    },
+  };
 
   const calculatedAge = useMemo(() => calculateAgeFromDob(draft.dateOfBirth), [draft.dateOfBirth]);
 
   const availableDoctorsForDepartment = useMemo(() => {
-    if (!draft.departmentId) return doctors;
-    return doctors.filter((d) => d.departmentId === draft.departmentId);
+    const activeRoster = doctors.filter((d) => d.status !== 'Inactive' && d.status !== 'Resigned');
+    if (!draft.departmentId) return activeRoster;
+    return activeRoster.filter((d) => d.departmentId === draft.departmentId);
   }, [doctors, draft.departmentId]);
 
   const availableTypesForDepartment = useMemo(() => {
@@ -544,12 +633,14 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
 
         <DoctorAvailabilityCalendar
           departments={departments}
-          doctors={doctors}
+          doctors={doctors.filter((d) => d.status !== 'Inactive' && d.status !== 'Resigned')}
           schedules={schedules}
           appointments={appointments}
           selectedDepartmentId={draft.departmentId}
           onSelectDepartment={(deptId) => {
-            const firstDoc = doctors.find((d) => !deptId || d.departmentId === deptId);
+            const firstDoc = doctors.find(
+              (d) => d.status !== 'Inactive' && d.status !== 'Resigned' && (!deptId || d.departmentId === deptId)
+            );
             setDraft((prev) => ({
               ...prev,
               departmentId: deptId,
@@ -886,28 +977,173 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <NeuSelect
-                    label="Medical Department"
-                    required
-                    value={draft.departmentId}
-                    onChange={(e) => {
-                      const deptId = e.target.value;
-                      const firstDoc = doctors.find((d) => d.departmentId === deptId);
-                      setDraft((p) => ({
-                        ...p,
-                        departmentId: deptId,
-                        doctorId: firstDoc ? firstDoc.id : '',
-                        startTime: '',
-                        endTime: '',
-                        timeLabel: '',
-                      }));
-                    }}
-                    error={errors.departmentId}
-                    options={[
-                      { value: '', label: 'Select a Department...' },
-                      ...departments.map((d) => ({ value: d.id, label: d.name })),
-                    ]}
-                  />
+                  <div className="relative flex flex-col gap-1.5" ref={deptDropdownRef}>
+                    <label
+                      htmlFor="select-medical-department"
+                      className="text-xs font-semibold text-[#101B45] px-1"
+                    >
+                      Medical Department <span className="text-[#D63649]">*</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      id="select-medical-department"
+                      onClick={() => {
+                        setDeptDropdownOpen((prev) => !prev);
+                        setHoveredDeptId(null);
+                      }}
+                      className={`neu-inset rounded-[18px] px-4 py-3 text-sm text-left text-[#101B45] focus:outline-none flex items-center justify-between cursor-pointer ${
+                        errors.departmentId ? 'ring-2 ring-[#D63649]' : ''
+                      }`}
+                    >
+                      <span className={selectedDepartment ? 'text-[#101B45] font-medium' : 'text-[#68789D]'}>
+                        {selectedDepartment ? selectedDepartment.name : 'Select a Department...'}
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#68789D] transition-transform duration-200 ${
+                          deptDropdownOpen ? 'rotate-180 text-[#3478F6]' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {errors.departmentId && (
+                      <p className="text-xs text-[#D63649] font-medium flex items-center gap-1 px-1">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{errors.departmentId}</span>
+                      </p>
+                    )}
+
+                    {/* Custom Dropdown List + Right-Side Floating Hover Card on Option Hover */}
+                    {deptDropdownOpen && (
+                      <div
+                        className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-2xl bg-[#EEF2F7] border border-white/80 shadow-[0_16px_36px_rgba(15,23,42,0.18)] py-1.5"
+                        onMouseLeave={() => setHoveredDeptId(null)}
+                      >
+                        <div
+                          onClick={() => {
+                            setDraft((p) => ({
+                              ...p,
+                              departmentId: '',
+                              doctorId: '',
+                              startTime: '',
+                              endTime: '',
+                              timeLabel: '',
+                            }));
+                            setDeptDropdownOpen(false);
+                            setHoveredDeptId(null);
+                          }}
+                          onMouseEnter={() => setHoveredDeptId(null)}
+                          className="px-4 py-2 text-xs text-[#64748B] hover:bg-black/5 cursor-pointer"
+                        >
+                          Select a Department...
+                        </div>
+
+                        {departments.map((dept) => {
+                          const isSelected = draft.departmentId === dept.id;
+                          const isHovered = hoveredDeptId === dept.id;
+                          return (
+                            <div
+                              key={dept.id}
+                              onMouseEnter={() => setHoveredDeptId(dept.id)}
+                              onClick={() => {
+                                const firstDoc = doctors.find(
+                                  (d) =>
+                                    d.departmentId === dept.id &&
+                                    d.status !== 'Inactive' &&
+                                    d.status !== 'Resigned'
+                                );
+                                setDraft((p) => ({
+                                  ...p,
+                                  departmentId: dept.id,
+                                  doctorId: firstDoc ? firstDoc.id : '',
+                                  startTime: '',
+                                  endTime: '',
+                                  timeLabel: '',
+                                }));
+                                setDeptDropdownOpen(false);
+                                setHoveredDeptId(null);
+                              }}
+                              className={`relative px-4 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-colors ${
+                                isHovered
+                                  ? 'bg-[#3478F6] text-white font-semibold'
+                                  : isSelected
+                                    ? 'bg-[#3478F6]/12 text-[#1D4ED8] font-semibold'
+                                    : 'text-[#101B45] hover:bg-[#3478F6]/10'
+                              }`}
+                            >
+                              <span>{dept.name}</span>
+                              <span
+                                className={`text-[10px] font-bold ${
+                                  isHovered ? 'text-white/90' : 'text-[#64748B]'
+                                }`}
+                              >
+                                {dept.code} →
+                              </span>
+
+                              {/* Floating Pop-Up Card on the Right Side when Hovering This Option */}
+                              {isHovered &&
+                                (() => {
+                                  const guide = DEPARTMENT_CLINICAL_GUIDE[dept.id] || {
+                                    titleTagalog: dept.name,
+                                    meaning: dept.description,
+                                    commonSymptoms: [
+                                      'Outpatient clinical evaluation',
+                                      'Specialist consultation & follow-up',
+                                    ],
+                                    leadDoctor: dept.headDoctorName,
+                                  };
+                                  return (
+                                    <div
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="pointer-events-none absolute left-full top-0 ml-3 w-[320px] sm:w-[350px] z-[60] rounded-2xl p-4 bg-white text-[#172B4D] border border-[#3478F6]/40 shadow-[0_20px_48px_rgba(15,23,42,0.28)] space-y-2.5 text-xs font-normal"
+                                    >
+                                      <div className="flex items-start justify-between gap-2 border-b border-black/10 pb-2">
+                                        <div className="flex items-center gap-1.5 text-[#3478F6] font-extrabold">
+                                          <Stethoscope className="w-4 h-4 shrink-0" />
+                                          <span>
+                                            {dept.name} ({dept.code})
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div className="p-2.5 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/20">
+                                        <div className="text-[10px] font-extrabold text-[#1D4ED8] uppercase tracking-wide">
+                                          Para Saan ang Department na Ito:
+                                        </div>
+                                        <div className="text-xs font-bold text-[#172B4D] mt-0.5">
+                                          {guide.titleTagalog}
+                                        </div>
+                                        <p className="text-[11px] text-[#475569] mt-1 leading-relaxed">
+                                          {guide.meaning}
+                                        </p>
+                                      </div>
+
+                                      <div>
+                                        <div className="text-[10px] font-extrabold text-[#16865C] uppercase tracking-wide mb-1">
+                                          Mga Sakit / Sintomas na Ginagamot Dito:
+                                        </div>
+                                        <ul className="space-y-0.5 pl-4 list-disc text-[#172B4D] font-medium text-[11px]">
+                                          {guide.commonSymptoms.map((sym, i) => (
+                                            <li key={i}>{sym}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+
+                                      <div className="pt-1.5 border-t border-black/10 flex items-center justify-between text-[11px] text-[#64748B]">
+                                        <span>
+                                          Doctor:{' '}
+                                          <strong className="text-[#172B4D]">{guide.leadDoctor}</strong>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
                   <NeuSelect
                     label="Preferred Doctor"
@@ -1047,6 +1283,13 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                   }}
                   selectedDate={draft.date}
                   onSelectDate={(dateStr) => {
+                    if (dateStr < DEMO_TODAY) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        date: 'Hindi pwedeng mag-book sa nakaraang petsa (Past Date). Pumili ng kasalukuyan o susunod na araw.',
+                      }));
+                      return;
+                    }
                     setDraft((prev) => ({
                       ...prev,
                       date: dateStr,

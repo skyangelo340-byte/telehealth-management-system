@@ -67,10 +67,10 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
   showFilters = true,
   displaySection = 'all',
 }) => {
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
-  // Default calendar month: October 2026 (year=2026, monthIndex=9)
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(9); // 0-indexed, 9 = October
+  const [viewMode] = useState<'month' | 'week' | 'day'>('month');
+  const todayParts = useMemo(() => DEMO_TODAY.split('-').map(Number), []);
+  const [currentYear, setCurrentYear] = useState(todayParts[0] || 2026);
+  const [currentMonth, setCurrentMonth] = useState((todayParts[1] || 10) - 1);
 
   const filteredDoctors = useMemo(() => {
     if (!selectedDepartmentId) return doctors;
@@ -137,8 +137,13 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
     );
   }, [activeDoctor, selectedDate, doctors, schedules, appointments]);
 
+  const isAtOrBeforeCurrentMonth =
+    currentYear < todayParts[0] ||
+    (currentYear === todayParts[0] && currentMonth <= todayParts[1] - 1);
+
   const handlePrev = () => {
     if (viewMode === 'month') {
+      if (isAtOrBeforeCurrentMonth) return;
       if (currentMonth === 0) {
         setCurrentYear((y) => y - 1);
         setCurrentMonth(11);
@@ -174,8 +179,8 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
   };
 
   const handleJumpToday = () => {
-    setCurrentYear(2026);
-    setCurrentMonth(9);
+    setCurrentYear(todayParts[0]);
+    setCurrentMonth(todayParts[1] - 1);
     onSelectDate(DEMO_TODAY);
   };
 
@@ -183,56 +188,35 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
   const afternoonSlots = selectedDayAvailability?.slots.filter((s) => s.period === 'Afternoon') || [];
 
   return (
-    <div className="neu-raised rounded-2xl p-5 sm:p-6 flex flex-col gap-5">
+    <div className="neu-raised rounded-[26px] p-5 sm:p-6 flex flex-col gap-5">
       {/* Header & Mode Indicator */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-black/5">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-[#2674FF]/10">
         <div>
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-[#3478F6]" aria-hidden="true" />
-            <h2 className="text-base sm:text-lg font-bold text-[#172B4D]">
-              Doctor Availability & Time Slots
-            </h2>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl neu-icon-orb flex items-center justify-center text-[#2674FF] shrink-0">
+              <CalendarIcon className="w-4 h-4" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-[#101B45]">
+                Doctor Availability & Time Slots
+              </h2>
+            </div>
           </div>
-          <p className="text-xs text-[#64748B] mt-0.5">
-            Timezone: <span className="font-mono-tabular font-medium text-[#172B4D]">{CLINIC_TIMEZONE}</span> · Demo Sandbox Availability
-          </p>
         </div>
-
-        {/* View Mode Switcher */}
-        {displaySection !== 'slots' && (
-          <div className="neu-inset p-1 rounded-xl flex items-center gap-1" role="tablist" aria-label="Calendar view mode">
-            {(['month', 'week', 'day'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                role="tab"
-                aria-selected={viewMode === mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all cursor-pointer whitespace-nowrap ${
-                  viewMode === mode
-                    ? 'bg-[#3478F6] text-white shadow-xs'
-                    : 'text-[#64748B] hover:text-[#172B4D]'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Optional Department & Doctor Filters */}
       {showFilters && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="cal-dept-filter" className="text-xs font-semibold text-[#172B4D]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="cal-dept-filter" className="text-xs font-semibold text-[#101B45] px-1">
               Filter by Department
             </label>
             <select
               id="cal-dept-filter"
               value={selectedDepartmentId}
               onChange={(e) => onSelectDepartment(e.target.value)}
-              className="neu-inset rounded-xl px-3 py-2 text-xs sm:text-sm text-[#172B4D] bg-[#E9EEF3]"
+              className="neu-inset rounded-[18px] px-4 py-2.5 text-xs sm:text-sm text-[#101B45]"
             >
               <option value="">All Clinical Departments</option>
               {departments.map((d) => (
@@ -243,15 +227,15 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="cal-doc-filter" className="text-xs font-semibold text-[#172B4D]">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="cal-doc-filter" className="text-xs font-semibold text-[#101B45] px-1">
               Attending Doctor
             </label>
             <select
               id="cal-doc-filter"
               value={activeDoctor?.id || ''}
               onChange={(e) => onSelectDoctor(e.target.value)}
-              className="neu-inset rounded-xl px-3 py-2 text-xs sm:text-sm text-[#172B4D] bg-[#E9EEF3]"
+              className="neu-inset rounded-[18px] px-4 py-2.5 text-xs sm:text-sm text-[#101B45]"
             >
               {filteredDoctors.map((doc) => (
                 <option key={doc.id} value={doc.id}>
@@ -265,14 +249,14 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
 
       {/* Active Doctor Schedule Info Bar */}
       {activeDoctor && (
-        <div className="neu-inset rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="neu-inset rounded-[18px] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div>
-            <span className="font-semibold text-[#172B4D]">{activeDoctor.fullName}</span>
-            <span className="mx-1.5 text-[#64748B]">·</span>
-            <span className="text-[#64748B]">{activeDoctor.departmentName}</span>
+            <span className="font-semibold text-[#101B45]">{activeDoctor.fullName}</span>
+            <span className="mx-1.5 text-[#68789D]">·</span>
+            <span className="text-[#68789D]">{activeDoctor.departmentName}</span>
           </div>
-          <div className="text-[#64748B] font-mono-tabular">
-            Working Days: <span className="text-[#172B4D] font-semibold">{activeDoctor.workingDays.join(', ')}</span>
+          <div className="text-[#68789D] font-mono-tabular">
+            Working Days: <span className="text-[#2674FF] font-semibold">{activeDoctor.workingDays.join(', ')}</span>
           </div>
         </div>
       )}
@@ -285,8 +269,13 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
               <button
                 type="button"
                 onClick={handlePrev}
+                disabled={viewMode === 'month' && isAtOrBeforeCurrentMonth}
                 aria-label="Previous period"
-                className="neu-btn w-9 h-9 rounded-xl flex items-center justify-center text-[#172B4D] cursor-pointer"
+                className={`neu-btn w-9 h-9 rounded-full flex items-center justify-center text-[#101B45] ${
+                  viewMode === 'month' && isAtOrBeforeCurrentMonth
+                    ? 'opacity-40 cursor-not-allowed'
+                    : 'cursor-pointer'
+                }`}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -294,11 +283,11 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                 type="button"
                 onClick={handleNext}
                 aria-label="Next period"
-                className="neu-btn w-9 h-9 rounded-xl flex items-center justify-center text-[#172B4D] cursor-pointer"
+                className="neu-btn w-9 h-9 rounded-full flex items-center justify-center text-[#101B45] cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <span className="text-sm sm:text-base font-bold text-[#172B4D] ml-1">
+              <span className="text-sm sm:text-base font-bold text-[#101B45] ml-1">
                 {viewMode === 'month'
                   ? `${MONTH_NAMES[currentMonth]} ${currentYear}`
                   : formatReadableDate(selectedDate)}
@@ -306,7 +295,7 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
             </div>
 
             <NeuButton size="sm" onClick={handleJumpToday}>
-              Today (Oct 6)
+              Today
             </NeuButton>
           </div>
 
@@ -343,28 +332,34 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                           )
                         : null;
 
-                      const isSelected = selectedDate === cell.dateStr;
+                      const isPastDate = cell.dateStr < DEMO_TODAY;
+                      const isSelected = selectedDate === cell.dateStr && !isPastDate;
                       const isToday = cell.dateStr === DEMO_TODAY;
-                      const status = dayAvail?.dayStatus || 'Doctor Unavailable';
+                      const status = isPastDate ? 'Past' : dayAvail?.dayStatus || 'Doctor Unavailable';
                       const openSlotsCount = dayAvail?.slots.filter((s) => s.status === 'Available').length || 0;
-                      const isDisabled = status === 'Past' || status === 'Doctor Unavailable' || status === 'Blocked / Leave';
+                      const isDisabled =
+                        isPastDate ||
+                        status === 'Past' ||
+                        status === 'Doctor Unavailable' ||
+                        status === 'Blocked / Leave' ||
+                        status === 'Fully Booked';
 
-                      let cellClasses = 'neu-btn text-[#172B4D]';
+                      let cellClasses = 'neu-btn text-[#101B45] cursor-pointer';
                       let statusLabel = `${openSlotsCount} open`;
 
                       if (isSelected) {
-                        cellClasses = 'neu-btn-primary text-white font-bold ring-2 ring-[#3478F6]/40';
+                        cellClasses = 'neu-btn-primary text-white font-bold ring-2 ring-[#66C8FF]/50 cursor-pointer';
                       } else if (status === 'Past') {
-                        cellClasses = 'neu-inset-sm text-[#64748B]/45 opacity-60 cursor-not-allowed';
+                        cellClasses = 'neu-inset-sm text-[#68789D]/45 opacity-55 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Past';
                       } else if (status === 'Blocked / Leave') {
-                        cellClasses = 'neu-inset-sm text-[#C63D4D] opacity-75 cursor-not-allowed';
+                        cellClasses = 'neu-inset-sm text-[#D63649] opacity-75 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Leave';
                       } else if (status === 'Doctor Unavailable') {
-                        cellClasses = 'neu-inset-sm text-[#64748B]/60 opacity-70 cursor-not-allowed';
+                        cellClasses = 'neu-inset-sm text-[#68789D]/60 opacity-70 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Off';
                       } else if (status === 'Fully Booked') {
-                        cellClasses = 'neu-btn text-[#C68117]';
+                        cellClasses = 'neu-inset-sm text-[#C87A14] opacity-80 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Full';
                       }
 
@@ -373,22 +368,26 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                           key={cell.dateStr}
                           type="button"
                           disabled={isDisabled}
-                          onClick={() => onSelectDate(cell.dateStr)}
+                          onClick={() => {
+                            if (!isDisabled && cell.dateStr >= DEMO_TODAY) {
+                              onSelectDate(cell.dateStr);
+                            }
+                          }}
                           aria-label={`${cell.dateStr} — ${status} (${statusLabel})`}
-                          className={`h-13 sm:h-14 rounded-xl p-1 flex flex-col items-center justify-center transition-all ${cellClasses}`}
+                          className={`h-13 sm:h-14 rounded-[18px] p-1 flex flex-col items-center justify-center transition-all ${cellClasses}`}
                         >
                           <span className="text-xs sm:text-sm font-mono-tabular font-semibold leading-none">
                             {cell.dayNum}
                             {isToday && !isSelected && (
-                              <span className="ml-0.5 text-[#3478F6] font-bold">•</span>
+                              <span className="ml-0.5 text-[#2674FF] font-bold">•</span>
                             )}
                           </span>
                           <span
                             className={`text-[10px] mt-1 leading-none font-medium truncate max-w-full ${
                               isSelected
-                                ? 'text-white/90'
+                                ? 'text-white/95'
                                 : status === 'Available'
-                                  ? 'text-[#16865C]'
+                                  ? 'text-[#12805C]'
                                   : ''
                             }`}
                           >
@@ -459,7 +458,6 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
 
           {/* Legend explaining calendar statuses */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-[#64748B] pt-1 border-t border-black/5">
-            <span className="font-semibold text-[#172B4D]">Legend:</span>
             <span className="inline-flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-[#16865C]" /> Available
             </span>
@@ -471,9 +469,6 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
             </span>
             <span className="inline-flex items-center gap-1">
               <Ban className="w-3.5 h-3.5 text-[#C63D4D]" /> Leave / Blocked
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span>Off / Past (Disabled)</span>
             </span>
           </div>
         </>
@@ -515,7 +510,7 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
             <div className="space-y-3">
               {/* Morning Slots: 7:00 AM - 11:00 AM */}
               <div>
-                <div className="text-xs font-semibold text-[#64748B] mb-2">
+                <div className="text-xs font-semibold text-[#68789D] mb-2">
                   Morning Session (7:00 AM – 11:00 AM)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -528,12 +523,12 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                         type="button"
                         disabled={!isAvailable}
                         onClick={() => onSelectSlot(slot.startTime, slot.endTime, slot.label)}
-                        className={`p-3 rounded-xl text-left flex items-center justify-between transition-all ${
+                        className={`px-4 py-3 rounded-[18px] text-left flex items-center justify-between transition-all ${
                           isSelected
                             ? 'neu-btn-primary text-white font-semibold'
                             : isAvailable
-                              ? 'neu-btn text-[#172B4D] hover:border-[#3478F6]/40 cursor-pointer'
-                              : 'neu-inset-sm text-[#64748B]/60 cursor-not-allowed opacity-75'
+                              ? 'neu-btn text-[#101B45] hover:border-[#2674FF]/40 cursor-pointer'
+                              : 'neu-inset-sm text-[#68789D]/60 cursor-not-allowed opacity-75'
                         }`}
                       >
                         <span className="text-xs font-mono-tabular font-semibold">{slot.label}</span>
@@ -542,10 +537,10 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                             isSelected
                               ? 'text-white'
                               : isAvailable
-                                ? 'text-[#16865C]'
+                                ? 'text-[#12805C]'
                                 : slot.status === 'Booked'
-                                  ? 'text-[#C68117]'
-                                  : 'text-[#C63D4D]'
+                                  ? 'text-[#C87A14]'
+                                  : 'text-[#D63649]'
                           }`}
                         >
                           {isSelected ? 'Selected ✓' : slot.status}
@@ -557,13 +552,13 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
               </div>
 
               {/* Midday Break Indicator */}
-              <div className="neu-inset-sm rounded-lg px-3 py-1.5 text-center text-[11px] text-[#64748B] font-mono-tabular">
+              <div className="neu-inset-sm rounded-full px-4 py-2 text-center text-[11px] text-[#68789D] font-mono-tabular">
                 11:00 AM – 1:00 PM · Scheduled Clinic Midday Break & Sanitization Window
               </div>
 
               {/* Afternoon Slots: 1:00 PM - 5:00 PM */}
               <div>
-                <div className="text-xs font-semibold text-[#64748B] mb-2">
+                <div className="text-xs font-semibold text-[#68789D] mb-2">
                   Afternoon Session (1:00 PM – 5:00 PM)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -576,12 +571,12 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                         type="button"
                         disabled={!isAvailable}
                         onClick={() => onSelectSlot(slot.startTime, slot.endTime, slot.label)}
-                        className={`p-3 rounded-xl text-left flex items-center justify-between transition-all ${
+                        className={`px-4 py-3 rounded-[18px] text-left flex items-center justify-between transition-all ${
                           isSelected
                             ? 'neu-btn-primary text-white font-semibold'
                             : isAvailable
-                              ? 'neu-btn text-[#172B4D] hover:border-[#3478F6]/40 cursor-pointer'
-                              : 'neu-inset-sm text-[#64748B]/60 cursor-not-allowed opacity-75'
+                              ? 'neu-btn text-[#101B45] hover:border-[#2674FF]/40 cursor-pointer'
+                              : 'neu-inset-sm text-[#68789D]/60 cursor-not-allowed opacity-75'
                         }`}
                       >
                         <span className="text-xs font-mono-tabular font-semibold">{slot.label}</span>
@@ -590,10 +585,10 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                             isSelected
                               ? 'text-white'
                               : isAvailable
-                                ? 'text-[#16865C]'
+                                ? 'text-[#12805C]'
                                 : slot.status === 'Booked'
-                                  ? 'text-[#C68117]'
-                                  : 'text-[#C63D4D]'
+                                  ? 'text-[#C87A14]'
+                                  : 'text-[#D63649]'
                           }`}
                         >
                           {isSelected ? 'Selected ✓' : slot.status}

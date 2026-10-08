@@ -16,6 +16,11 @@ import {
   Stethoscope,
   FileText,
   Send,
+  Loader2,
+  Sparkles,
+  AlertTriangle,
+  HeartPulse,
+  Code2,
 } from 'lucide-react';
 import {
   Department,
@@ -37,13 +42,17 @@ import {
   sendOtpEmailViaGmail,
   googleSignIn,
 } from '../../services/googleAuth';
+import {
+  analyzeSymptomConversation,
+  GOOGLE_COLAB_NOTEBOOK_PYTHON,
+} from '../../services/symptomTriageService';
 
 interface PublicPagesProps {
   currentScreen: ScreenId;
   onNavigate: (screen: ScreenId) => void;
   onBookAppointmentClick: () => void;
   onAuthenticateCredentials: (email: string, password: string) => { success: boolean; error?: string };
-  onGoogleLoginSuccess: (email: string, displayName: string) => void;
+  onGoogleLoginSuccess: (email: string, displayName: string) => { success: boolean; error?: string } | void;
   onRegisterPatientAccount: (
     fullName: string,
     email: string,
@@ -138,94 +147,116 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
     {
       id: 'm-1',
       sender: 'assistant',
-      text: 'Welcome to the TeleHealth Pre-Consultation Symptom Assessment. Describe your current non-emergency symptoms or select a prompt below to receive guidance before booking an appointment.',
+      text: 'Maligayang pagdating sa TeleHealth Pre-Consultation Symptom Assessment. Ibahagi ang iyong nararamdamang sintomas, ilang araw na ito, at gaano kalala. Tandaan: Mga tanong na may kinalaman sa kalusugan at panggagamot lamang ang sinasagot ng AI Assistant na ito.',
       timestamp: 'Just now',
       followUpOptions: [
-        'Mild morning headache & blood pressure check',
-        'Seasonal skin rash / eczema flare-up',
-        'Lower molar sensitivity to cold drinks',
+        'Masakit ang ulo sa umaga at 150/95 ang BP ko',
+        'May makating pantal / rash sa braso nang 3 araw',
+        'Nangingilo at sumasakit ang bagang kapag umiinom ng malamig',
+        'May lagnat at ubo na 2 araw na',
       ],
     },
   ]);
   const [chatInput, setChatInput] = useState('');
+  const [isAnalyzingChat, setIsAnalyzingChat] = useState(false);
   const [shareAssessmentWithDoc, setShareAssessmentWithDoc] = useState(true);
   const [publicAssessments, setPublicAssessments] = useState<AssessmentSummary[]>([]);
 
   if (currentScreen === 'telehealth-assessment') {
-    const handleSendMessage = (textToSend: string) => {
-      if (!textToSend.trim()) return;
+    const handleSendMessage = async (textToSend: string) => {
+      if (!textToSend.trim() || isAnalyzingChat) return;
+      const trimmed = textToSend.trim();
       const userMsg: AssessmentMessage = {
         id: `m-${Date.now()}`,
         sender: 'user',
-        text: textToSend.trim(),
+        text: trimmed,
         timestamp: 'Just now',
       };
 
-      const lower = textToSend.toLowerCase();
-      let replyText =
-        'Thank you for sharing those details. Based on your description, a non-urgent 60-minute General Consultation is appropriate. Would you like to proceed to Book an Appointment?';
-      let dept = 'Internal & General Medicine';
-      let severity: AssessmentSummary['severityLevel'] = 'Routine';
-
-      if (lower.includes('chest') || lower.includes('shortness of breath') || lower.includes('severe')) {
-        replyText =
-          'URGENT CARE GUIDANCE: Symptoms involving chest pressure or acute shortness of breath require immediate in-person emergency evaluation. Do not wait for a scheduled outpatient telehealth slot.';
-        dept = 'Cardiology & Vascular Care';
-        severity = 'Urgent Evaluation Advised';
-      } else if (lower.includes('blood pressure') || lower.includes('headache')) {
-        replyText =
-          'Noted: Mild morning headache alongside home blood pressure tracking. We recommend scheduling a Follow-up Consultation with Cardiology & Vascular Care and bringing your 14-day BP log.';
-        dept = 'Cardiology & Vascular Care';
-        severity = 'Routine';
-      }
-
-      const assistantMsg: AssessmentMessage = {
-        id: `m-${Date.now() + 1}`,
-        sender: 'assistant',
-        text: replyText,
-        timestamp: 'Just now',
-      };
-
-      setChatMessages((prev) => [...prev, userMsg, assistantMsg]);
+      const updatedHistory = [...chatMessages, userMsg];
+      setChatMessages(updatedHistory);
       setChatInput('');
+      setIsAnalyzingChat(true);
 
-      setPublicAssessments((prev) => [
-        {
-          id: `asmt-${Date.now()}`,
-          patientId: 'guest',
-          createdAt: new Date().toISOString(),
-          chiefSymptoms: [textToSend.trim()],
-          duration: 'Reported today',
-          severityLevel: severity,
-          recommendedDepartment: dept,
-          recommendedAppointmentType: 'General Consultation',
-          summaryText: replyText,
-          sharedWithDoctor: shareAssessmentWithDoc,
-        },
-        ...prev,
-      ]);
+      try {
+        const result = await analyzeSymptomConversation({
+          messages: updatedHistory.map((m) => ({
+            sender: m.sender,
+            text: m.text,
+          })),
+          latestUserMessage: trimmed,
+        });
+
+        const assistantMsg: AssessmentMessage = {
+          id: `m-${Date.now() + 1}`,
+          sender: 'assistant',
+          text: result.replyText,
+          timestamp: 'Just now',
+          followUpOptions: result.followUpOptions,
+          clinicalReport: {
+            isMedicalTopic: result.isMedicalTopic,
+            hasEnoughInfo: result.hasEnoughInfo,
+            chiefSymptoms: result.chiefSymptoms,
+            recommendedActions: result.recommendedActions,
+            risksIfIgnored: result.risksIfIgnored,
+            firstAidSteps: result.firstAidSteps,
+            doctorRecommendationReason: result.doctorRecommendationReason,
+            randomForest: result.randomForest,
+          },
+        };
+
+        setChatMessages((prev) => [...prev, assistantMsg]);
+
+        if (result.isMedicalTopic && result.hasEnoughInfo) {
+          setPublicAssessments((prev) => [
+            {
+              id: `asmt-${Date.now()}`,
+              patientId: 'guest',
+              createdAt: new Date().toISOString(),
+              chiefSymptoms:
+                result.chiefSymptoms.length > 0 ? result.chiefSymptoms : [trimmed],
+              duration: 'Assessed today',
+              severityLevel: result.randomForest.urgencyLevel,
+              recommendedDepartment: result.randomForest.predictedDepartmentName,
+              recommendedAppointmentType: 'General Consultation',
+              summaryText: result.replyText,
+              sharedWithDoctor: shareAssessmentWithDoc,
+            },
+            ...prev,
+          ]);
+        }
+      } finally {
+        setIsAnalyzingChat(false);
+      }
     };
 
     return (
       <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-xs font-semibold text-[#3478F6]">
-              Optional Consultation Guidance · Non-Diagnostic Intake Assistant
+            <div className="text-xs font-semibold text-[#3478F6] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Assistant · Pre-Consultation Medical Guidance</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#172B4D]">
               TeleHealth Pre-Visit Symptom Assessment
             </h1>
             <p className="text-xs text-[#64748B] mt-0.5">
-              This guidance tool helps organize your symptoms before booking. It is not a confirmed medical diagnosis.
+              Provides recommended actions, risks if ignored, first-aid (paunang lunas), and specialist doctor matching.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <NeuButton onClick={() => onNavigate('landing')}>Back to Home</NeuButton>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <NeuButton
+              onClick={() => onNavigate('landing')}
+              className="!shadow-[0_2px_6px_rgba(23,43,77,0.06)] !border-black/5 bg-white/75 backdrop-blur-xs"
+            >
+              Back to Home
+            </NeuButton>
             <NeuButton
               variant="primary"
               onClick={onBookAppointmentClick}
               icon={<Calendar className="w-4 h-4" />}
+              className="!shadow-[0_3px_8px_rgba(52,120,246,0.22)] !border-transparent"
             >
               Book an Appointment
             </NeuButton>
@@ -233,30 +264,191 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
         </div>
 
         <div>
-          <NeuCard className="w-full flex flex-col justify-between min-h-[420px] space-y-4">
-            <div className="space-y-3 overflow-y-auto max-h-[320px] pr-1">
+          <NeuCard className="w-full flex flex-col justify-between min-h-[480px] space-y-5 !bg-white/20 !backdrop-blur-[3px] !border !border-white/70 !shadow-[0_8px_30px_rgba(23,43,77,0.07),inset_0_1px_1px_rgba(255,255,255,0.85)]">
+            {/* Header Strip */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-black/10 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-1 rounded-lg bg-[#3478F6]/15 text-[#1D4ED8] font-bold inline-flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>AI Assistant</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setChatMessages([
+                    {
+                      id: 'm-reset',
+                      sender: 'assistant',
+                      text: 'Handa na ulit ang ating AI Assistant. Ano ang nararamdaman mong sintomas ngayon, ilang araw na, at gaano kalala?',
+                      timestamp: 'Just now',
+                      followUpOptions: [
+                        'Masakit ang ulo sa umaga at 150/95 ang BP ko',
+                        'May makating pantal / rash sa braso nang 3 araw',
+                        'Nangingilo at sumasakit ang bagang kapag umiinom ng malamig',
+                      ],
+                    },
+                  ])
+                }
+                className="text-xs font-bold text-[#3478F6] hover:underline cursor-pointer"
+              >
+                Reset Chat
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto max-h-[520px] pr-1">
               {chatMessages.map((m) => (
                 <div
                   key={m.id}
-                  className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
+                  className={`p-4 rounded-2xl text-sm leading-relaxed transition-all ${
                     m.sender === 'user'
-                      ? 'neu-btn-primary text-white ml-8'
-                      : 'neu-inset text-[#172B4D] mr-6'
+                      ? 'bg-[#3478F6]/90 backdrop-blur-[2px] text-white shadow-[0_4px_14px_rgba(52,120,246,0.22)] border border-white/30 ml-8'
+                      : 'bg-white/65 backdrop-blur-[2px] border border-white/80 shadow-[0_4px_16px_rgba(23,43,77,0.05),inset_0_1px_0_rgba(255,255,255,0.9)] text-[#0F172A] mr-4'
                   }`}
                 >
-                  <div className="font-bold mb-1">
-                    {m.sender === 'user' ? 'Visitor' : 'Clinical Intake Guide'} ·{' '}
-                    <span className="font-normal opacity-75">{m.timestamp}</span>
+                  <div
+                    className={`text-xs font-extrabold tracking-tight mb-1.5 flex items-center justify-between gap-2 ${
+                      m.sender === 'user' ? 'text-white' : 'text-[#0F172A]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>
+                        {m.sender === 'user' ? 'Patient / Visitor' : 'AI Assistant'}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span
+                        className={`font-bold ${
+                          m.sender === 'user' ? 'text-white/90' : 'text-[#475569]'
+                        }`}
+                      >
+                        {m.timestamp}
+                      </span>
+                    </div>
                   </div>
-                  <p>{m.text}</p>
-                  {m.followUpOptions && (
-                    <div className="flex flex-wrap gap-2 mt-3">
+
+                  <p
+                    className={`text-sm font-semibold leading-relaxed ${
+                      m.sender === 'user' ? 'text-white' : 'text-[#0F172A]'
+                    }`}
+                  >
+                    {m.text}
+                  </p>
+
+                  {/* Non-Medical Guardrail Notice */}
+                  {m.clinicalReport && !m.clinicalReport.isMedicalTopic && (
+                    <div className="mt-3 p-3 rounded-xl bg-[#C63D4D]/10 border border-[#C63D4D]/30 text-xs text-[#C63D4D] font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>
+                        Paalala: Ang AI Assistant na ito ay para lamang sa mga medikal na sintomas, paunang lunas, at konsultasyon sa doktor.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Full Clinical Triage Report when hasEnoughInfo is true */}
+                  {m.clinicalReport &&
+                    m.clinicalReport.isMedicalTopic &&
+                    m.clinicalReport.hasEnoughInfo && (
+                      <div className="mt-4 space-y-3.5 pt-3.5 border-t border-black/10 text-xs">
+                        {/* 1. Recommended Actions (Ano ang dapat gawin) */}
+                        {m.clinicalReport.recommendedActions.length > 0 && (
+                          <div className="p-3.5 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/25 space-y-1.5">
+                            <div className="font-extrabold text-[#1D4ED8] flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                              <span>1. Rekomendadong Dapat Gawin (Recommended Actions)</span>
+                            </div>
+                            <ul className="space-y-1 pl-5 list-disc text-[#0F172A] font-medium">
+                              {m.clinicalReport.recommendedActions.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* 2. Risks if Ignored (Mga mangyayari kapag pinabayaan) */}
+                        {m.clinicalReport.risksIfIgnored.length > 0 && (
+                          <div className="p-3.5 rounded-xl bg-[#C63D4D]/10 border border-[#C63D4D]/25 space-y-1.5">
+                            <div className="font-extrabold text-[#C63D4D] flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              <AlertTriangle className="w-4 h-4 shrink-0" />
+                              <span>2. Mga Posibleng Mangyari Kapag Pinabayaan (Risks if Left Untreated)</span>
+                            </div>
+                            <ul className="space-y-1 pl-5 list-disc text-[#0F172A] font-medium">
+                              {m.clinicalReport.risksIfIgnored.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* 3. First Aid / Paunang Lunas */}
+                        {m.clinicalReport.firstAidSteps.length > 0 && (
+                          <div className="p-3.5 rounded-xl bg-[#16865C]/10 border border-[#16865C]/25 space-y-1.5">
+                            <div className="font-extrabold text-[#16865C] flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              <HeartPulse className="w-4 h-4 shrink-0" />
+                              <span>
+                                3. Paunang Lunas Habang Hindi Pa Nakakapagpa-Checkup (First Aid &amp; Home Care)
+                              </span>
+                            </div>
+                            <ul className="space-y-1 pl-5 list-disc text-[#0F172A] font-medium">
+                              {m.clinicalReport.firstAidSteps.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* 4. Suggested Specialist Doctor */}
+                        <div className="p-4 rounded-xl bg-white/80 border border-[#3478F6]/30 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="font-extrabold text-[#172B4D] flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              <Stethoscope className="w-4 h-4 text-[#3478F6]" />
+                              <span>
+                                4. Inirerekomendang Doktor at Departamento
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#E9EEF3]/80 border border-black/5">
+                            <div className="space-y-0.5">
+                              <div className="text-sm font-extrabold text-[#172B4D]">
+                                {m.clinicalReport.randomForest.recommendedDoctorName}
+                              </div>
+                              <div className="text-xs font-bold text-[#3478F6]">
+                                {m.clinicalReport.randomForest.predictedDepartmentName} ·{' '}
+                                {m.clinicalReport.randomForest.recommendedDoctorTitle}
+                              </div>
+                              <div className="text-[11px] text-[#475569]">
+                                Specialty: {m.clinicalReport.randomForest.recommendedDoctorSpecialty}
+                              </div>
+                              {m.clinicalReport.doctorRecommendationReason && (
+                                <p className="text-xs text-[#172B4D] pt-1">
+                                  {m.clinicalReport.doctorRecommendationReason}
+                                </p>
+                              )}
+                            </div>
+
+                            <NeuButton
+                              size="sm"
+                              variant="primary"
+                              onClick={onBookAppointmentClick}
+                              icon={<Calendar className="w-3.5 h-3.5" />}
+                              className="shrink-0"
+                            >
+                              Book with {m.clinicalReport.randomForest.recommendedDoctorName}
+                            </NeuButton>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  {m.followUpOptions && m.followUpOptions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3.5">
                       {m.followUpOptions.map((opt) => (
                         <button
                           key={opt}
                           type="button"
+                          disabled={isAnalyzingChat}
                           onClick={() => handleSendMessage(opt)}
-                          className="neu-btn px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[#3478F6] cursor-pointer"
+                          className="bg-white/75 hover:bg-white border border-[#3478F6]/30 shadow-xs px-3 py-1.5 rounded-xl text-xs font-bold text-[#1D4ED8] hover:text-[#1E3A8A] transition-all cursor-pointer disabled:opacity-50"
                         >
                           {opt}
                         </button>
@@ -265,6 +457,15 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                   )}
                 </div>
               ))}
+
+              {isAnalyzingChat && (
+                <div className="p-4 rounded-2xl bg-white/65 border border-white/80 text-xs font-semibold text-[#172B4D] mr-8 flex items-center gap-3">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#3478F6] shrink-0" />
+                  <span>
+                    Sinusuri ng AI Assistant ang iyong sintomas...
+                  </span>
+                </div>
+              )}
             </div>
 
             <form
@@ -272,17 +473,25 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                 e.preventDefault();
                 handleSendMessage(chatInput);
               }}
-              className="flex items-center gap-2 pt-3 border-t border-black/5"
+              className="flex items-center gap-2.5 pt-3.5 border-t border-white/45"
             >
               <input
                 type="text"
-                placeholder="Describe your symptoms, duration, or questions..."
+                disabled={isAnalyzingChat}
+                placeholder="I-type ang iyong nararamdamang sintomas, ilang araw na, o tanong tungkol sa gamutan..."
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 aria-label="Symptom description input"
-                className="neu-inset flex-1 rounded-xl px-3.5 py-2.5 text-xs text-[#172B4D]"
+                className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-[#0F172A] placeholder:text-[#1E293B]/75 bg-white/55 backdrop-blur-[2px] border border-white/80 shadow-[inset_0_1px_2px_rgba(23,43,77,0.05)] focus:bg-white/80 focus:outline-none"
               />
-              <NeuButton type="submit" variant="primary" size="sm" icon={<Send className="w-3.5 h-3.5" />}>
+              <NeuButton
+                type="submit"
+                variant="primary"
+                size="md"
+                loading={isAnalyzingChat}
+                icon={<Send className="w-4 h-4" />}
+                className="!shadow-[0_4px_12px_rgba(52,120,246,0.25)] !border-white/25 font-bold"
+              >
                 Send
               </NeuButton>
             </form>
@@ -456,15 +665,49 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
               onClick={async () => {
                 setAuthError('');
                 try {
-                  const res = await googleSignIn();
-                  if (res?.user?.email) {
-                    onGoogleLoginSuccess(
-                      res.user.email,
-                      res.user.displayName || res.user.email.split('@')[0]
+                  const res = await googleSignIn(false);
+                  const signedInEmail =
+                    res?.user?.email ||
+                    res?.user?.providerData?.find((p) => p.email)?.email;
+                  const signedInName =
+                    res?.user?.displayName ||
+                    res?.user?.providerData?.find((p) => p.displayName)?.displayName ||
+                    (signedInEmail ? signedInEmail.split('@')[0] : 'Patient');
+
+                  if (signedInEmail) {
+                    const loginRes = onGoogleLoginSuccess(signedInEmail, signedInName);
+                    if (loginRes && !loginRes.success && loginRes.error) {
+                      setAuthError(loginRes.error);
+                    }
+                  } else if (res?.user) {
+                    const loginRes = onGoogleLoginSuccess(
+                      `${res.user.uid}@google.user`,
+                      signedInName
+                    );
+                    if (loginRes && !loginRes.success && loginRes.error) {
+                      setAuthError(loginRes.error);
+                    }
+                  }
+                } catch (err: any) {
+                  const code = err?.code || '';
+                  if (code === 'auth/popup-blocked') {
+                    setAuthError(
+                      'Popup was blocked by your browser. Please allow popups for this site and click Continue with Google again.'
+                    );
+                  } else if (code === 'auth/unauthorized-domain') {
+                    setAuthError(
+                      `This domain (${window.location.hostname}) is not yet added to Firebase Authorized Domains.`
+                    );
+                  } else if (
+                    code === 'auth/popup-closed-by-user' ||
+                    code === 'auth/cancelled-popup-request'
+                  ) {
+                    setAuthError('Google Sign-In popup was closed before completing sign-in.');
+                  } else {
+                    setAuthError(
+                      err?.message || 'Google Sign-In could not be completed. Please try again.'
                     );
                   }
-                } catch {
-                  setAuthError('Google Sign-In was cancelled or could not be completed.');
                 }
               }}
               icon={
@@ -703,7 +946,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
               {resetStep === 'email' &&
                 'Enter your registered Google / Gmail address to receive a real 6-digit One-Time Password (OTP) in your Gmail inbox.'}
               {resetStep === 'otp' &&
-                `Enter the 6-digit verification code sent to ${resetEmail}.`}
+                `Enter the 6-digit verification code sent to ${resetEmail} from telehealthotp@gmail.com.`}
               {resetStep === 'new-password' &&
                 'OTP verified. Create and confirm your new account password below.'}
               {resetStep === 'done' &&
@@ -784,7 +1027,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                   <span>6-Digit OTP Sent to Gmail</span>
                 </div>
                 <p className="text-[#64748B]">
-                  A 6-digit verification code has been sent to <strong className="text-[#172B4D]">{resetEmail}</strong>. Please check your Gmail inbox (and Spam/Sent folder) and enter the code below.
+                  A 6-digit verification code has been sent to <strong className="text-[#172B4D]">{resetEmail}</strong> from <strong className="text-[#3478F6]">telehealthotp@gmail.com</strong>. Please check your Gmail inbox (and Sent/Spam folder) and enter the code below.
                 </p>
               </div>
 
@@ -902,7 +1145,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
           isOpen={confirmSendModalOpen}
           onClose={() => setConfirmSendModalOpen(false)}
           title="Confirm Sending OTP via Gmail"
-          subtitle={`Recipient: ${resetEmail}`}
+          subtitle={`From: telehealthotp@gmail.com → To: ${resetEmail}`}
           footer={
             <>
               <NeuButton onClick={() => setConfirmSendModalOpen(false)}>Cancel</NeuButton>
@@ -920,10 +1163,12 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
           <div className="space-y-3 text-xs text-[#64748B]">
             <p className="text-[#172B4D] font-medium">
               Send a 6-digit password reset verification email to{' '}
-              <strong className="text-[#3478F6]">{resetEmail}</strong> using your connected Gmail account?
+              <strong className="text-[#3478F6]">{resetEmail}</strong> from{' '}
+              <strong className="text-[#172B4D]">telehealthotp@gmail.com</strong>?
             </p>
             <p>
-              If you haven't signed in with Google yet in this session, a Google Sign-In popup will appear so you can authorize sending the verification email to your inbox.
+              Once confirmed, your 6-digit verification code will be dispatched directly to{' '}
+              <strong>{resetEmail}</strong>.
             </p>
           </div>
         </NeuModal>
@@ -952,48 +1197,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
   ];
 
   return (
-    <div className="relative isolate overflow-hidden space-y-16 pb-12 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_85%_82%,rgba(22,134,92,0.10),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
-      {/* Designed Architectural Clinical Background Layer */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
-        {/* Precision Clinical Coordinate Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(23,43,77,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(23,43,77,0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_90%_85%_at_50%_35%,#000_55%,transparent_100%)]" />
-
-        {/* Soft Ambient Light Accents */}
-        <div className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[#3478F6]/12 blur-3xl" />
-        <div className="absolute top-[28%] -right-28 w-[440px] h-[440px] rounded-full bg-[#60A5FA]/14 blur-3xl" />
-        <div className="absolute -bottom-28 left-[22%] w-[520px] h-[360px] rounded-full bg-[#16865C]/8 blur-3xl" />
-
-        {/* Subtle Architectural Contour Rings & Medical Crosshair Accents */}
-        <svg
-          className="absolute top-0 right-0 w-[680px] h-[680px] text-[#3478F6]/[0.07] -translate-y-1/4 translate-x-1/5"
-          viewBox="0 0 600 600"
-          fill="none"
-        >
-          <circle cx="300" cy="300" r="140" stroke="currentColor" strokeWidth="1.25" strokeDasharray="6 6" />
-          <circle cx="300" cy="300" r="210" stroke="currentColor" strokeWidth="1.25" />
-          <circle cx="300" cy="300" r="280" stroke="currentColor" strokeWidth="1" strokeDasharray="3 8" />
-          <path d="M300 10V590M10 300H590" stroke="currentColor" strokeWidth="0.75" />
-        </svg>
-
-        <svg
-          className="absolute bottom-8 left-0 w-[560px] h-[320px] text-[#172B4D]/[0.045] -translate-x-16"
-          viewBox="0 0 560 320"
-          fill="none"
-        >
-          <path
-            d="M0 240 C 140 160, 260 290, 400 190 C 470 140, 520 165, 560 120"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M0 280 C 150 200, 280 310, 420 220 C 485 175, 525 195, 560 155"
-            stroke="currentColor"
-            strokeWidth="1"
-            strokeDasharray="4 6"
-          />
-        </svg>
-      </div>
-
+    <div className="space-y-16 pb-12">
       {/* Hero Section */}
       <section id="overview" className="scroll-mt-24 pt-6 sm:pt-10 px-4 sm:px-8 max-w-7xl mx-auto">
         <div
@@ -1063,7 +1267,10 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
 
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-[#172B4D]">Attending Specialists Today</div>
-                {doctors.slice(0, 3).map((doc) => (
+                {doctors
+                  .filter((d) => d.status !== 'Inactive' && d.status !== 'Resigned')
+                  .slice(0, 3)
+                  .map((doc) => (
                   <div
                     key={doc.id}
                     className="neu-raised-sm rounded-xl p-3 flex items-center justify-between gap-2 text-xs"
@@ -1156,7 +1363,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
           >
             Terms & Conditions
           </button>
-          <span>Contact: support@telehealth.example.org</span>
+          <span>Contact: admintelehealth@gmail.com</span>
         </div>
       </footer>
     </div>

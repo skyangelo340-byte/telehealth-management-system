@@ -5,6 +5,7 @@ import {
   getDocs,
   onSnapshot,
   writeBatch,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './googleAuth';
 import {
@@ -28,15 +29,21 @@ import {
   INITIAL_SYSTEM_SETTINGS,
 } from './mockData';
 
-function stripUndefined<T extends Record<string, any>>(obj: T): T {
-  const cleaned: Record<string, any> = {};
-  for (const key of Object.keys(obj)) {
-    const val = obj[key];
-    if (val !== undefined) {
-      cleaned[key] = val;
-    }
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as unknown as T;
   }
-  return cleaned as T;
+  if (value !== null && typeof value === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const key of Object.keys(value as Record<string, any>)) {
+      const val = (value as Record<string, any>)[key];
+      if (val !== undefined) {
+        cleaned[key] = stripUndefined(val);
+      }
+    }
+    return cleaned as T;
+  }
+  return value;
 }
 
 export async function seedInitialFirestoreData(): Promise<void> {
@@ -73,6 +80,16 @@ export async function seedInitialFirestoreData(): Promise<void> {
       }
       batch.set(doc(db, 'settings', 'main'), stripUndefined(INITIAL_SYSTEM_SETTINGS));
       await batch.commit();
+    } else {
+      const schedSnap = await getDocs(collection(db, 'schedules'));
+      if (schedSnap.empty) {
+        const batch = writeBatch(db);
+        for (const sKey of Object.keys(INITIAL_SCHEDULES)) {
+          const sched = INITIAL_SCHEDULES[sKey];
+          batch.set(doc(db, 'schedules', sched.doctorId), stripUndefined(sched));
+        }
+        await batch.commit();
+      }
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, 'seedInitialFirestoreData');
@@ -100,6 +117,20 @@ export async function saveDoctorToDb(doctor: DoctorProfile): Promise<void> {
     await setDoc(doc(db, 'doctors', doctor.id), stripUndefined(doctor));
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `doctors/${doctor.id}`);
+  }
+}
+
+export async function deleteDoctorFromDb(doctorId: string, userId?: string): Promise<void> {
+  try {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'doctors', doctorId));
+    batch.delete(doc(db, 'schedules', doctorId));
+    if (userId) {
+      batch.delete(doc(db, 'users', userId));
+    }
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `doctors/${doctorId}`);
   }
 }
 

@@ -2,15 +2,49 @@
 
 @layer base {
   :root {
-    --bg-main: #E9EEF3;
-    --bg-raised: #E9EEF3;
-    --primary-blue: #3478F6;
-    --text-navy: #172B4D;
-    --text-secondary: #64748B;
-    --color-success: #16865C;
-    --color-warning: #C68117;
-    --color-error: #C63D4D;
+    --bg-main: #EAF0FF;
+    --bg-secondary: #E3EAFB;
+    --bg-raised: #ECF2FF;
+    --primary-blue: #2674FF;
+    --secondary-blue: #1649D8;
+    --accent-cyan: #66C8FF;
+    --text-navy: #101B45;
+    --text-secondary: #68789D;
+    --color-success: #12805C;
+    --color-warning: #C87A14;
+    --color-error: #D63649;
     --color-white: #FFFFFF;
+
+    --surface-grad-start: #F1F6FF;
+    --surface-grad-end: #E3EAFB;
+    --inset-bg: #E5ECFB;
+    --shadow-dark: rgba(145, 166, 212, 0.38);
+    --shadow-light: rgba(255, 255, 255, 0.96);
+    --border-highlight: rgba(255, 255, 255, 0.85);
+    --border-inset: rgba(255, 255, 255, 0.65);
+  }
+
+  html.dark {
+    --bg-main: #0D152C;
+    --bg-secondary: #111C38;
+    --bg-raised: #142040;
+    --primary-blue: #3380FF;
+    --secondary-blue: #1D56EB;
+    --accent-cyan: #66C8FF;
+    --text-navy: #F0F5FF;
+    --text-secondary: #8FA1C7;
+    --color-success: #2DD498;
+    --color-warning: #FBBF24;
+    --color-error: #F87171;
+    --color-white: #162345;
+
+    --surface-grad-start: #162447;
+    --surface-grad-end: #101B37;
+    --inset-bg: #0B1226;
+    --shadow-dark: rgba(5, 9, 20, 0.72);
+    --shadow-light: rgba(38, 60, 112, 0.36);
+    --border-highlight: rgba(102, 200, 255, 0.14);
+    --border-inset: rgba(102, 200, 255, 0.09);
   }
 
   html {
@@ -18,15 +52,19 @@
   }
 
   body {
-    background-color: #E9EEF3;
-    color: #172B4D;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    line-height: 1.5;
+    background: linear-gradient(145deg, var(--bg-main) 0%, var(--bg-secondary) 100%);
+    background-attachment: fixed;
+    color: var(--text-navy);
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   h1, h2, h3, h4, .font-display {
     font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     text-wrap: balance;
+    letter-spacing: -0.02em;
   }
 
   .font-mono-tabular {
@@ -39,70 +77,189 @@
   }
 }
 
-/* Premium Neumorphic Surface System */
-.neu-raised {
-  background-color: #E9EEF3;
-  box-shadow: 7px 7px 14px #c8cdd2, -7px -7px 14px #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+/* ==========================================================================
+   Ultra-Premium Neumorphic (Soft UI) Surface & Shadow System
+   ========================================================================== */
+
+/* Standard Elevated Floating Panel */
+.neu-raised,
+.neu-surface {
+  background: linear-gradient(145deg, var(--surface-grad-start), var(--surface-grad-end));
+  border: 1px solid var(--border-highlight);
+  border-radius: 24px;
+  box-shadow:
+    10px 12px 24px var(--shadow-dark),
+    -10px -10px 24px var(--shadow-light),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.75);
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease;
 }
 
+/* Secondary / Compact Elevated Card */
 .neu-raised-sm {
-  background-color: #E9EEF3;
-  box-shadow: 4px 4px 8px #c8cdd2, -4px -4px 8px #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(145deg, var(--surface-grad-start), var(--surface-grad-end));
+  border: 1px solid var(--border-highlight);
+  border-radius: 18px;
+  box-shadow:
+    6px 7px 14px var(--shadow-dark),
+    -6px -6px 14px var(--shadow-light),
+    inset 1px 1px 1.5px rgba(255, 255, 255, 0.7);
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Hero / Modal Primary Elevated Container */
 .neu-raised-lg {
-  background-color: #E9EEF3;
-  box-shadow: 10px 10px 20px #c4c9cf, -10px -10px 20px #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: linear-gradient(145deg, var(--surface-grad-start), var(--surface-grad-end));
+  border: 1px solid var(--border-highlight);
+  border-radius: 28px;
+  box-shadow:
+    16px 18px 36px var(--shadow-dark),
+    -14px -14px 32px var(--shadow-light),
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.85);
 }
 
+/* Soft Recessed Inset Surface (Inputs, Wells, Tracks) */
 .neu-inset {
-  background-color: #E9EEF3;
-  box-shadow: inset 4px 4px 8px #c8cdd2, inset -4px -4px 8px #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: var(--inset-bg);
+  border: 1px solid var(--border-inset);
+  border-radius: 18px;
+  box-shadow:
+    inset 5px 5px 11px var(--shadow-dark),
+    inset -5px -5px 11px var(--shadow-light);
+  transition:
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms ease;
 }
 
+/* Compact Recessed Inset Well */
 .neu-inset-sm {
-  background-color: #E9EEF3;
-  box-shadow: inset 2px 2px 5px #c8cdd2, inset -2px -2px 5px #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--inset-bg);
+  border: 1px solid var(--border-inset);
+  border-radius: 14px;
+  box-shadow:
+    inset 3px 3px 7px var(--shadow-dark),
+    inset -3px -3px 7px var(--shadow-light);
 }
 
+/* Circular / Squircle Neumorphic Icon Orb */
+.neu-icon-orb {
+  background: linear-gradient(145deg, var(--surface-grad-start), var(--surface-grad-end));
+  border: 1px solid var(--border-highlight);
+  box-shadow:
+    5px 6px 12px var(--shadow-dark),
+    -5px -5px 12px var(--shadow-light),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Frosted Glass Neumorphic Header / Bar */
+.neu-glass {
+  background: rgba(234, 240, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 24px rgba(145, 166, 212, 0.18);
+}
+
+html.dark .neu-glass {
+  background: rgba(15, 25, 52, 0.84);
+  border-bottom: 1px solid rgba(102, 200, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(5, 9, 20, 0.5);
+}
+
+/* Soft UI Secondary Interactive Button */
 .neu-btn {
-  background-color: #E9EEF3;
-  box-shadow: 4px 4px 8px #c8cdd2, -4px -4px 8px #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  background: linear-gradient(145deg, var(--surface-grad-start), var(--surface-grad-end));
+  border: 1px solid var(--border-highlight);
+  box-shadow:
+    6px 6px 14px var(--shadow-dark),
+    -6px -6px 14px var(--shadow-light),
+    inset 1px 1px 1px rgba(255, 255, 255, 0.8);
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .neu-btn:hover:not(:disabled) {
-  background-color: #eef2f6;
+  transform: translateY(-1.5px);
+  box-shadow:
+    8px 9px 18px var(--shadow-dark),
+    -8px -8px 18px var(--shadow-light),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.9);
 }
 
 .neu-btn:active:not(:disabled),
 .neu-btn-active {
-  background-color: #E9EEF3;
-  box-shadow: inset 3px 3px 6px #c8cdd2, inset -3px -3px 6px #ffffff;
-  transform: scale(0.99);
+  background: var(--inset-bg);
+  box-shadow:
+    inset 4px 4px 8px var(--shadow-dark),
+    inset -4px -4px 8px var(--shadow-light);
+  transform: translateY(0.5px) scale(0.985);
 }
 
+/* Signature Electric-Blue 3D Pill Call-To-Action Button */
 .neu-btn-primary {
-  background-color: #3478F6;
+  background: linear-gradient(135deg, #3B86FF 0%, #2674FF 52%, #1649D8 100%);
   color: #FFFFFF;
-  box-shadow: 4px 4px 10px rgba(52, 120, 246, 0.35), -3px -3px 8px #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow:
+    6px 8px 20px rgba(38, 116, 255, 0.38),
+    -4px -4px 12px var(--shadow-light),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.55);
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .neu-btn-primary:hover:not(:disabled) {
-  background-color: #2968e2;
+  background: linear-gradient(135deg, #4B92FF 0%, #2674FF 45%, #1649D8 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    8px 11px 24px rgba(38, 116, 255, 0.48),
+    -5px -5px 14px var(--shadow-light),
+    0 0 16px rgba(102, 200, 255, 0.32),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.65);
 }
 
 .neu-btn-primary:active:not(:disabled) {
-  box-shadow: inset 3px 3px 6px rgba(15, 45, 110, 0.4);
-  transform: scale(0.99);
+  background: linear-gradient(145deg, #1649D8 0%, #2674FF 100%);
+  box-shadow:
+    inset 4px 4px 9px rgba(10, 32, 98, 0.55),
+    inset -2px -2px 6px rgba(102, 200, 255, 0.25);
+  transform: translateY(0.5px) scale(0.985);
+}
+
+/* Input & Form Focus Glow */
+input.neu-inset:focus,
+select.neu-inset:focus,
+textarea.neu-inset:focus {
+  border-color: rgba(38, 116, 255, 0.65);
+  box-shadow:
+    inset 4px 4px 9px var(--shadow-dark),
+    inset -4px -4px 9px var(--shadow-light),
+    0 0 0 3px rgba(38, 116, 255, 0.16);
+}
+
+/* Dark Mode Overrides for Legacy Hardcoded Palette Utility Classes */
+html.dark .text-\[\#172B4D\],
+html.dark .text-\[\#101B45\] {
+  color: #F0F5FF !important;
+}
+
+html.dark .text-\[\#64748B\],
+html.dark .text-\[\#68789D\] {
+  color: #94A6CC !important;
+}
+
+html.dark .bg-\[\#E9EEF3\],
+html.dark .bg-\[\#EAF0FF\] {
+  background-color: #0D152C !important;
 }
 
 /* Focus accessibility */
@@ -111,7 +268,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #3478F6;
+  outline: 2px solid #2674FF;
   outline-offset: 2px;
 }
 
@@ -123,4 +280,5 @@ textarea:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
 

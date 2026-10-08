@@ -15,7 +15,16 @@ import {
 } from '../types';
 
 export const CLINIC_TIMEZONE = 'America/Los_Angeles (PT)';
-export const DEMO_TODAY = '2026-10-06';
+
+export function getTodayDateStr(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export const DEMO_TODAY = getTodayDateStr();
 
 export const INITIAL_USERS: User[] = [
   {
@@ -466,9 +475,10 @@ export function computeDoctorAvailabilityForDate(
 ): DoctorAvailability {
   const doctor = doctors.find((d) => d.id === doctorId);
   const schedule = schedules[doctorId];
+  const todayStr = getTodayDateStr();
 
-  // Past date check relative to DEMO_TODAY (2026-10-06)
-  if (dateStr < DEMO_TODAY) {
+  // Past date check relative to current date
+  if (dateStr < todayStr) {
     return {
       doctorId,
       date: dateStr,
@@ -488,15 +498,21 @@ export function computeDoctorAvailabilityForDate(
     };
   }
 
-  // Check if doctor is on full-day leave or blocked date
+  // Check if doctor is on Admin-Approved full-day leave or blocked date
   const fullDayBlock = schedule.blocks.find(
     (b) =>
+      b.status === 'Approved' &&
       (b.type === 'Leave' || b.type === 'Blocked Date') &&
       dateStr >= b.startDate &&
       dateStr <= b.endDate
   );
 
-  if (fullDayBlock || doctor.status === 'On Leave' || doctor.status === 'Inactive') {
+  if (
+    fullDayBlock ||
+    doctor.status === 'On Leave' ||
+    doctor.status === 'Inactive' ||
+    doctor.status === 'Resigned'
+  ) {
     return {
       doctorId,
       date: dateStr,
@@ -538,9 +554,10 @@ export function computeDoctorAvailabilityForDate(
       return { ...slot, status: 'Unavailable' };
     }
 
-    // Check individual slot block
+    // Check individual slot block (only takes effect once Approved by Admin)
     const slotBlocked = schedule.blocks.find(
       (b) =>
+        b.status === 'Approved' &&
         b.type === 'Slot Block' &&
         dateStr >= b.startDate &&
         dateStr <= b.endDate &&
