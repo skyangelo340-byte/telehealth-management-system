@@ -141,11 +141,12 @@ export const NeuInput: React.FC<
     helperText?: string;
     error?: string;
     rightElement?: React.ReactNode;
+    inputRightElement?: React.ReactNode;
   }
-> = ({ label, helperText, error, rightElement, id, className = '', required, ...props }) => {
+> = ({ label, helperText, error, rightElement, inputRightElement, id, className = '', required, ...props }) => {
   const inputId = id || `input-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={`flex flex-col gap-1.5 ${inputRightElement ? 'relative' : ''}`}>
       <label htmlFor={inputId} className="text-xs font-semibold text-[#101B45] flex items-center justify-between px-1">
         <span>
           {label} {required && <span className="text-[#D63649]">*</span>}
@@ -156,10 +157,13 @@ export const NeuInput: React.FC<
         id={inputId}
         required={required}
         className={`neu-inset rounded-[18px] px-4 py-3 text-sm text-[#101B45] placeholder:text-[#68789D]/70 focus:outline-none ${
+          inputRightElement ? 'pr-11' : ''
+        } ${
           error ? 'ring-2 ring-[#D63649]' : ''
         } disabled:opacity-60 ${className}`}
         {...props}
       />
+      {inputRightElement}
       {error ? (
         <p className="text-xs text-[#D63649] font-medium flex items-center gap-1 px-1">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />

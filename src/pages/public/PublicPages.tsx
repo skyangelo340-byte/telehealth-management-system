@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   HeartPulse,
   Code2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   Department,
@@ -84,6 +86,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
 
   // Registration state
@@ -626,7 +629,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
             />
             <NeuInput
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               required
               value={password}
               onChange={(e) => {
@@ -641,6 +644,16 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                   className="text-xs text-[#3478F6] hover:underline font-medium cursor-pointer"
                 >
                   Forgot password?
+                </button>
+              }
+              inputRightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3.5 top-[22px] h-[44px] flex items-center justify-center text-[#68789D] hover:text-[#101B45] transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               }
             />
