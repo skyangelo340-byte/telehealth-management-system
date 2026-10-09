@@ -85,13 +85,28 @@ export const AppShell: React.FC<AppShellProps> = ({
     return (
       <div className="min-h-screen flex flex-col bg-[#E9EEF3] text-[#172B4D]">
         {/* Top Bar Contract: Zone 1 (Single wordmark) — Zone 2 (4-5 clean text links) — Zone 3 (1-2 primary actions) */}
-        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-8 py-3.5">
-          <div className="flex items-center justify-between">
-            {/* Zone 1: Single text element wordmark */}
+        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+          {/* Zone 1: Single text element wordmark */}
+          <button
+            type="button"
+            onClick={() => {
+              onNavigate('landing');
+              setTimeout(() => {
+                const el = document.getElementById('overview');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                else window.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 30);
+            }}
+            className="text-lg font-extrabold tracking-tight text-[#172B4D] font-display cursor-pointer whitespace-nowrap"
+          >
+            TeleHealth
+          </button>
+
+          {/* Zone 2: Clean text navigation links */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#64748B]" aria-label="Public navigation">
             <button
               type="button"
               onClick={() => {
-                setMobileDrawerOpen(false);
                 onNavigate('landing');
                 setTimeout(() => {
                   const el = document.getElementById('overview');
@@ -99,145 +114,43 @@ export const AppShell: React.FC<AppShellProps> = ({
                   else window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 30);
               }}
-              className="text-lg font-extrabold tracking-tight text-[#172B4D] font-display cursor-pointer whitespace-nowrap"
+              className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
             >
-              TeleHealth
+              Overview
             </button>
-
-            {/* Zone 2: Clean text navigation links */}
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#64748B]" aria-label="Public navigation">
-              <button
-                type="button"
-                onClick={() => {
+            <a
+              href="#departments"
+              onClick={(e) => {
+                if (currentScreen !== 'landing') {
+                  e.preventDefault();
                   onNavigate('landing');
                   setTimeout(() => {
-                    const el = document.getElementById('overview');
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    else window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }, 30);
-                }}
-                className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
-              >
-                Overview
-              </button>
-              <a
-                href="#departments"
-                onClick={(e) => {
-                  if (currentScreen !== 'landing') {
-                    e.preventDefault();
-                    onNavigate('landing');
-                    setTimeout(() => {
-                      document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 50);
-                  }
-                }}
-                className="hover:text-[#172B4D] transition-colors whitespace-nowrap"
-              >
-                Departments
-              </a>
-              <button
-                type="button"
-                onClick={() => onNavigate('telehealth-assessment')}
-                className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
-              >
-                Symptom Assessment
-              </button>
-            </nav>
-
-            {/* Zone 3: Desktop primary actions */}
-            <div className="hidden md:flex items-center gap-3">
-              <NeuButton size="sm" onClick={() => onNavigate('sign-in')}>
-                Sign In
-              </NeuButton>
-              <NeuButton variant="primary" size="sm" onClick={onBookAppointmentClick}>
-                Book Appointment
-              </NeuButton>
-            </div>
-
-            {/* Mobile Hamburger Toggle Button */}
+                    document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 50);
+                }
+              }}
+              className="hover:text-[#172B4D] transition-colors whitespace-nowrap"
+            >
+              Departments
+            </a>
             <button
               type="button"
-              onClick={() => setMobileDrawerOpen((prev) => !prev)}
-              aria-label={mobileDrawerOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              aria-expanded={mobileDrawerOpen}
-              className="md:hidden neu-btn w-10 h-10 rounded-xl flex items-center justify-center text-[#172B4D] cursor-pointer"
+              onClick={() => onNavigate('telehealth-assessment')}
+              className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
             >
-              {mobileDrawerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              Symptom Assessment
             </button>
+          </nav>
+
+          {/* Zone 3: 1-2 primary actions */}
+          <div className="flex items-center gap-3">
+            <NeuButton size="sm" onClick={() => onNavigate('sign-in')}>
+              Sign In
+            </NeuButton>
+            <NeuButton variant="primary" size="sm" onClick={onBookAppointmentClick}>
+              Book Appointment
+            </NeuButton>
           </div>
-
-          {/* Mobile Hamburger Menu Dropdown */}
-          {mobileDrawerOpen && (
-            <div className="md:hidden mt-3 pt-3 border-t border-black/5 space-y-3">
-              <nav className="flex flex-col space-y-1 text-sm font-semibold text-[#172B4D]" aria-label="Mobile public navigation">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileDrawerOpen(false);
-                    onNavigate('landing');
-                    setTimeout(() => {
-                      const el = document.getElementById('overview');
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      else window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }, 30);
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
-                >
-                  Overview
-                </button>
-                <a
-                  href="#departments"
-                  onClick={(e) => {
-                    setMobileDrawerOpen(false);
-                    if (currentScreen !== 'landing') {
-                      e.preventDefault();
-                      onNavigate('landing');
-                      setTimeout(() => {
-                        document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }, 50);
-                    }
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors"
-                >
-                  Departments
-                </a>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileDrawerOpen(false);
-                    onNavigate('telehealth-assessment');
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/50 transition-colors cursor-pointer"
-                >
-                  Symptom Assessment
-                </button>
-              </nav>
-
-              <div className="flex flex-col gap-2.5 pt-2 border-t border-black/5">
-                <NeuButton
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    setMobileDrawerOpen(false);
-                    onNavigate('sign-in');
-                  }}
-                >
-                  Sign In
-                </NeuButton>
-                <NeuButton
-                  variant="primary"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    setMobileDrawerOpen(false);
-                    onBookAppointmentClick();
-                  }}
-                >
-                  Book Appointment
-                </NeuButton>
-              </div>
-            </div>
-          )}
         </header>
 
         <main className="relative isolate overflow-hidden flex-1 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_85%_82%,rgba(22,134,92,0.10),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
@@ -438,72 +351,38 @@ export const AppShell: React.FC<AppShellProps> = ({
                 <div className="absolute right-0 mt-2 w-80 neu-raised-lg rounded-2xl p-4 z-50 space-y-3">
                   <div className="flex items-center justify-between border-b border-black/5 pb-2">
                     <span className="text-xs font-bold text-[#172B4D]">
-                      {unreadCount > 0 ? `Notifications (${unreadCount} Unread)` : 'Notifications'}
+                      Notifications ({unreadCount} Unread)
                     </span>
-                    <div className="flex items-center gap-2">
-                      {unreadCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            roleNotifications.forEach((n) => {
-                              if (!n.read) onMarkNotificationRead(n.id);
-                            });
-                          }}
-                          className="text-[11px] text-[#16865C] font-semibold hover:underline cursor-pointer"
-                        >
-                          Mark All Read
-                        </button>
-                      )}
-                      {(currentRole === 'patient' || currentRole === 'doctor') && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNotifDropdownOpen(false);
-                            if (currentRole === 'patient') onNavigate('patient-notifications');
-                            else if (currentRole === 'doctor') onNavigate('doctor-notifications');
-                          }}
-                          className="text-[11px] text-[#3478F6] font-semibold hover:underline cursor-pointer"
-                        >
-                          View All
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNotifDropdownOpen(false);
+                        if (currentRole === 'patient') onNavigate('patient-notifications');
+                        else if (currentRole === 'doctor') onNavigate('doctor-notifications');
+                      }}
+                      className="text-[11px] text-[#3478F6] font-semibold hover:underline cursor-pointer"
+                    >
+                      View All
+                    </button>
                   </div>
 
-                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
                     {roleNotifications.length === 0 ? (
                       <div className="neu-inset-sm rounded-xl p-4 text-center text-xs text-[#64748B]">
                         No notifications for your account yet.
                       </div>
                     ) : (
-                      roleNotifications.map((n) => (
+                      roleNotifications.slice(0, 4).map((n) => (
                         <div
                           key={n.id}
                           onClick={() => {
-                            if (!n.read) {
-                              onMarkNotificationRead(n.id);
-                            }
+                            onMarkNotificationRead(n.id);
+                            setNotifDropdownOpen(false);
+                            if (currentRole === 'patient') onNavigate('patient-notifications');
+                            if (currentRole === 'doctor') onNavigate('doctor-notifications');
                           }}
-                          className={`neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40 transition-all ${
-                            !n.read ? 'border-l-4 border-l-[#3478F6]' : 'opacity-80'
-                          }`}
+                          className="neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40"
                         >
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span
-                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                !n.read
-                                  ? 'bg-[#3478F6]/15 text-[#3478F6]'
-                                  : 'bg-[#16865C]/15 text-[#16865C]'
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  !n.read ? 'bg-[#3478F6]' : 'bg-[#16865C]'
-                                }`}
-                              />
-                              {!n.read ? 'Unread Notification' : 'Read Status'}
-                            </span>
-                          </div>
                           <div className="font-bold text-[#172B4D]">{n.title}</div>
                           <p className="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">{n.message}</p>
                         </div>
