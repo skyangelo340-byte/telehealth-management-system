@@ -80,57 +80,12 @@ export const AppShell: React.FC<AppShellProps> = ({
   });
   const unreadCount = roleNotifications.filter((n) => !n.read).length;
 
-  const renderClinicalMainBackground = () => (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
-      {/* Base Rich Clinical Multi-Stop Gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.16),transparent_65%),radial-gradient(ellipse_70%_50%_at_85%_48%,rgba(96,165,250,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_82%_85%,rgba(22,134,92,0.12),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]" />
-
-      {/* Precision Clinical Coordinate Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(23,43,77,0.038)_1px,transparent_1px),linear-gradient(to_bottom,rgba(23,43,77,0.038)_1px,transparent_1px)] bg-[size:48px_48px]" />
-
-      {/* Soft Ambient Light Accents */}
-      <div className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[#3478F6]/14 blur-3xl" />
-      <div className="absolute top-[28%] -right-28 w-[440px] h-[440px] rounded-full bg-[#60A5FA]/16 blur-3xl" />
-      <div className="absolute -bottom-28 left-[22%] w-[520px] h-[360px] rounded-full bg-[#16865C]/10 blur-3xl" />
-
-      {/* Subtle Architectural Contour Rings & Medical Crosshair Accents */}
-      <svg
-        className="absolute top-0 right-0 w-[680px] h-[680px] text-[#3478F6]/[0.075] -translate-y-1/4 translate-x-1/5"
-        viewBox="0 0 600 600"
-        fill="none"
-      >
-        <circle cx="300" cy="300" r="140" stroke="currentColor" strokeWidth="1.25" strokeDasharray="6 6" />
-        <circle cx="300" cy="300" r="210" stroke="currentColor" strokeWidth="1.25" />
-        <circle cx="300" cy="300" r="280" stroke="currentColor" strokeWidth="1" strokeDasharray="3 8" />
-        <path d="M300 10V590M10 300H590" stroke="currentColor" strokeWidth="0.75" />
-      </svg>
-
-      <svg
-        className="absolute bottom-8 left-0 w-[560px] h-[320px] text-[#172B4D]/[0.05] -translate-x-16"
-        viewBox="0 0 560 320"
-        fill="none"
-      >
-        <path
-          d="M0 240 C 140 160, 260 290, 400 190 C 470 140, 520 165, 560 120"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M0 280 C 150 200, 280 310, 420 220 C 485 175, 525 195, 560 155"
-          stroke="currentColor"
-          strokeWidth="1"
-          strokeDasharray="4 6"
-        />
-      </svg>
-    </div>
-  );
-
   // PUBLIC / GUEST SHELL: Enforces the 3-Zone Top Bar Contract
   if (currentRole === 'guest') {
     return (
-      <div className="min-h-screen flex flex-col bg-transparent text-[#172B4D]">
+      <div className="min-h-screen flex flex-col bg-[#E9EEF3] text-[#172B4D]">
         {/* Top Bar Contract: Zone 1 (Single wordmark) — Zone 2 (4-5 clean text links) — Zone 3 (1-2 primary actions) */}
-        <header className="sticky top-0 z-30 bg-[#E2E9F2]/80 backdrop-blur-md border-b border-black/5 px-4 sm:px-8 py-3.5">
+        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-8 py-3.5">
           <div className="flex items-center justify-between">
             {/* Zone 1: Single text element wordmark */}
             <button
@@ -285,8 +240,47 @@ export const AppShell: React.FC<AppShellProps> = ({
           )}
         </header>
 
-        <main className="relative isolate overflow-hidden flex-1 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.16),transparent_65%),radial-gradient(ellipse_70%_50%_at_85%_48%,rgba(96,165,250,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_82%_85%,rgba(22,134,92,0.12),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
-          {renderClinicalMainBackground()}
+        <main className="relative isolate overflow-hidden flex-1 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_85%_82%,rgba(22,134,92,0.10),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
+          {/* Designed Architectural Clinical Background Layer */}
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+            {/* Precision Clinical Coordinate Grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(23,43,77,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(23,43,77,0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_90%_85%_at_50%_35%,#000_55%,transparent_100%)]" />
+
+            {/* Soft Ambient Light Accents */}
+            <div className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[#3478F6]/12 blur-3xl" />
+            <div className="absolute top-[28%] -right-28 w-[440px] h-[440px] rounded-full bg-[#60A5FA]/14 blur-3xl" />
+            <div className="absolute -bottom-28 left-[22%] w-[520px] h-[360px] rounded-full bg-[#16865C]/8 blur-3xl" />
+
+            {/* Subtle Architectural Contour Rings & Medical Crosshair Accents */}
+            <svg
+              className="absolute top-0 right-0 w-[680px] h-[680px] text-[#3478F6]/[0.07] -translate-y-1/4 translate-x-1/5"
+              viewBox="0 0 600 600"
+              fill="none"
+            >
+              <circle cx="300" cy="300" r="140" stroke="currentColor" strokeWidth="1.25" strokeDasharray="6 6" />
+              <circle cx="300" cy="300" r="210" stroke="currentColor" strokeWidth="1.25" />
+              <circle cx="300" cy="300" r="280" stroke="currentColor" strokeWidth="1" strokeDasharray="3 8" />
+              <path d="M300 10V590M10 300H590" stroke="currentColor" strokeWidth="0.75" />
+            </svg>
+
+            <svg
+              className="absolute bottom-8 left-0 w-[560px] h-[320px] text-[#172B4D]/[0.045] -translate-x-16"
+              viewBox="0 0 560 320"
+              fill="none"
+            >
+              <path
+                d="M0 240 C 140 160, 260 290, 400 190 C 470 140, 520 165, 560 120"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M0 280 C 150 200, 280 310, 420 220 C 485 175, 525 195, 560 155"
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeDasharray="4 6"
+              />
+            </svg>
+          </div>
           {children}
         </main>
       </div>
@@ -336,10 +330,10 @@ export const AppShell: React.FC<AppShellProps> = ({
   const navItems = getRoleNavItems();
 
   return (
-    <div className="min-h-screen flex bg-transparent text-[#172B4D]">
+    <div className="min-h-screen flex bg-[#E9EEF3] text-[#172B4D]">
       {/* Desktop Collapsible Left Sidebar */}
       <aside
-        className={`hidden md:flex flex-col justify-between sticky top-0 h-screen overflow-y-auto border-r border-black/5 bg-[#E2E9F2]/85 backdrop-blur-md transition-all shrink-0 ${
+        className={`hidden md:flex flex-col justify-between sticky top-0 h-screen overflow-y-auto border-r border-black/5 bg-[#E9EEF3] transition-all shrink-0 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } p-4`}
         aria-label="Role navigation sidebar"
@@ -404,7 +398,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Main Content Column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navigation Bar */}
-        <header className="sticky top-0 z-30 bg-[#E2E9F2]/80 backdrop-blur-md border-b border-black/5 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -590,8 +584,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         )}
 
         {/* Main Viewport Content */}
-        <main className="relative isolate overflow-hidden flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.16),transparent_65%),radial-gradient(ellipse_70%_50%_at_85%_48%,rgba(96,165,250,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_82%_85%,rgba(22,134,92,0.12),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
-          {renderClinicalMainBackground()}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto">
           {children}
         </main>
       </div>
