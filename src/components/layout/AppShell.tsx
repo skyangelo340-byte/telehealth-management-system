@@ -381,8 +381,26 @@ export const AppShell: React.FC<AppShellProps> = ({
                             if (currentRole === 'patient') onNavigate('patient-notifications');
                             if (currentRole === 'doctor') onNavigate('doctor-notifications');
                           }}
-                          className="neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40"
+                          className={`neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40 transition-all ${
+                            !n.read ? 'border-l-4 border-l-[#3478F6]' : 'opacity-80'
+                          }`}
                         >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                !n.read
+                                  ? 'bg-[#3478F6]/15 text-[#3478F6]'
+                                  : 'bg-[#16865C]/15 text-[#16865C]'
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  !n.read ? 'bg-[#3478F6]' : 'bg-[#16865C]'
+                                }`}
+                              />
+                              {!n.read ? 'Unread Notification' : 'Read Status'}
+                            </span>
+                          </div>
                           <div className="font-bold text-[#172B4D]">{n.title}</div>
                           <p className="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">{n.message}</p>
                         </div>
