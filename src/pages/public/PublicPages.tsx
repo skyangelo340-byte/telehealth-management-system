@@ -241,10 +241,10 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
               <Sparkles className="w-3.5 h-3.5" />
               <span>AI Assistant · Pre-Consultation Medical Guidance</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#172B4D]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#172B4D] dark:text-[#F1F5F9]">
               TeleHealth Pre-Visit Symptom Assessment
             </h1>
-            <p className="text-xs text-[#64748B] mt-0.5">
+            <p className="text-xs text-[#64748B] dark:text-[#A7B4CC] mt-0.5">
               Provides recommended actions, risks if ignored, first-aid (paunang lunas), and specialist doctor matching.
             </p>
           </div>
@@ -267,11 +267,11 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
         </div>
 
         <div>
-          <NeuCard className="w-full flex flex-col justify-between min-h-[480px] space-y-5 !bg-white/20 !backdrop-blur-[3px] !border !border-white/70 !shadow-[0_8px_30px_rgba(23,43,77,0.07),inset_0_1px_1px_rgba(255,255,255,0.85)]">
+          <NeuCard className="w-full flex flex-col justify-between min-h-[480px] space-y-5 !bg-white/20 dark:!bg-[#121B35]/70 !backdrop-blur-[3px] !border !border-white/70 dark:!border-white/10 !shadow-[0_8px_30px_rgba(23,43,77,0.07),inset_0_1px_1px_rgba(255,255,255,0.85)] dark:!shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
             {/* Header Strip */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-black/10 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-black/10 dark:border-white/10 text-xs">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-[#3478F6]/15 text-[#1D4ED8] font-bold inline-flex items-center gap-1.5">
+                <span className="px-2.5 py-1 rounded-lg bg-[#3478F6]/15 dark:bg-[#3478F6]/25 text-[#1D4ED8] dark:text-[#60A5FA] font-bold inline-flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>AI Assistant</span>
                 </span>
@@ -293,7 +293,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                     },
                   ])
                 }
-                className="text-xs font-bold text-[#3478F6] hover:underline cursor-pointer"
+                className="text-xs font-bold text-[#3478F6] dark:text-[#60A5FA] hover:underline cursor-pointer"
               >
                 Reset Chat
               </button>
@@ -306,12 +306,12 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                   className={`p-4 rounded-2xl text-sm leading-relaxed transition-all ${
                     m.sender === 'user'
                       ? 'bg-[#3478F6]/90 backdrop-blur-[2px] text-white shadow-[0_4px_14px_rgba(52,120,246,0.22)] border border-white/30 ml-8'
-                      : 'bg-white/65 backdrop-blur-[2px] border border-white/80 shadow-[0_4px_16px_rgba(23,43,77,0.05),inset_0_1px_0_rgba(255,255,255,0.9)] text-[#0F172A] mr-4'
+                      : 'bg-white/70 dark:bg-[#152243] backdrop-blur-[2px] border border-white/80 dark:border-white/10 shadow-[0_4px_16px_rgba(23,43,77,0.05),inset_0_1px_0_rgba(255,255,255,0.9)] text-[#0F172A] dark:text-[#F0F5FF] mr-4'
                   }`}
                 >
                   <div
                     className={`text-xs font-extrabold tracking-tight mb-1.5 flex items-center justify-between gap-2 ${
-                      m.sender === 'user' ? 'text-white' : 'text-[#0F172A]'
+                      m.sender === 'user' ? 'text-white' : 'text-[#0F172A] dark:text-[#F0F5FF]'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -321,7 +321,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                       <span aria-hidden="true">·</span>
                       <span
                         className={`font-bold ${
-                          m.sender === 'user' ? 'text-white/90' : 'text-[#475569]'
+                          m.sender === 'user' ? 'text-white/90' : 'text-[#475569] dark:text-[#A5B4D0]'
                         }`}
                       >
                         {m.timestamp}
@@ -331,7 +331,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
 
                   <p
                     className={`text-sm font-semibold leading-relaxed ${
-                      m.sender === 'user' ? 'text-white' : 'text-[#0F172A]'
+                      m.sender === 'user' ? 'text-white' : 'text-[#0F172A] dark:text-[#F0F5FF]'
                     }`}
                   >
                     {m.text}
@@ -400,30 +400,30 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                         )}
 
                         {/* 4. Suggested Specialist Doctor */}
-                        <div className="p-4 rounded-xl bg-white/80 border border-[#3478F6]/30 space-y-3">
+                        <div className="p-4 rounded-xl bg-white/80 dark:bg-[#142040] border border-[#3478F6]/30 dark:border-white/10 space-y-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="font-extrabold text-[#172B4D] flex items-center gap-1.5 text-xs uppercase tracking-wide">
-                              <Stethoscope className="w-4 h-4 text-[#3478F6]" />
+                            <div className="font-extrabold text-[#172B4D] dark:text-[#F0F5FF] flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                              <Stethoscope className="w-4 h-4 text-[#3478F6] dark:text-[#60A5FA]" />
                               <span>
                                 4. Inirerekomendang Doktor at Departamento
                               </span>
                             </div>
                           </div>
 
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#E9EEF3]/80 border border-black/5">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#E9EEF3]/80 dark:bg-[#0B1226] border border-black/5 dark:border-white/10">
                             <div className="space-y-0.5">
-                              <div className="text-sm font-extrabold text-[#172B4D]">
+                              <div className="text-sm font-extrabold text-[#172B4D] dark:text-[#F0F5FF]">
                                 {m.clinicalReport.randomForest.recommendedDoctorName}
                               </div>
-                              <div className="text-xs font-bold text-[#3478F6]">
+                              <div className="text-xs font-bold text-[#3478F6] dark:text-[#60A5FA]">
                                 {m.clinicalReport.randomForest.predictedDepartmentName} ·{' '}
                                 {m.clinicalReport.randomForest.recommendedDoctorTitle}
                               </div>
-                              <div className="text-[11px] text-[#475569]">
+                              <div className="text-[11px] text-[#475569] dark:text-[#A5B4D0]">
                                 Specialty: {m.clinicalReport.randomForest.recommendedDoctorSpecialty}
                               </div>
                               {m.clinicalReport.doctorRecommendationReason && (
-                                <p className="text-xs text-[#172B4D] pt-1">
+                                <p className="text-xs text-[#172B4D] dark:text-[#F0F5FF] pt-1">
                                   {m.clinicalReport.doctorRecommendationReason}
                                 </p>
                               )}
@@ -451,7 +451,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                           type="button"
                           disabled={isAnalyzingChat}
                           onClick={() => handleSendMessage(opt)}
-                          className="bg-white/75 hover:bg-white border border-[#3478F6]/30 shadow-xs px-3 py-1.5 rounded-xl text-xs font-bold text-[#1D4ED8] hover:text-[#1E3A8A] transition-all cursor-pointer disabled:opacity-50"
+                          className="bg-white/75 dark:bg-[#162447] hover:bg-white dark:hover:bg-[#1D2F5D] border border-[#3478F6]/30 dark:border-white/10 shadow-xs px-3 py-1.5 rounded-xl text-xs font-bold text-[#1D4ED8] dark:text-[#60A5FA] hover:text-[#1E3A8A] dark:hover:text-[#93C5FD] transition-all cursor-pointer disabled:opacity-50"
                         >
                           {opt}
                         </button>
@@ -462,8 +462,8 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
               ))}
 
               {isAnalyzingChat && (
-                <div className="p-4 rounded-2xl bg-white/65 border border-white/80 text-xs font-semibold text-[#172B4D] mr-8 flex items-center gap-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#3478F6] shrink-0" />
+                <div className="p-4 rounded-2xl bg-white/65 dark:bg-[#142040] border border-white/80 dark:border-white/10 text-xs font-semibold text-[#172B4D] dark:text-[#F0F5FF] mr-8 flex items-center gap-3">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#3478F6] dark:text-[#60A5FA] shrink-0" />
                   <span>
                     Sinusuri ng AI Assistant ang iyong sintomas...
                   </span>
@@ -476,7 +476,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                 e.preventDefault();
                 handleSendMessage(chatInput);
               }}
-              className="flex items-center gap-2.5 pt-3.5 border-t border-white/45"
+              className="flex items-center gap-2.5 pt-3.5 border-t border-white/45 dark:border-white/10"
             >
               <input
                 type="text"
@@ -485,7 +485,7 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 aria-label="Symptom description input"
-                className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-[#0F172A] placeholder:text-[#1E293B]/75 bg-white/55 backdrop-blur-[2px] border border-white/80 shadow-[inset_0_1px_2px_rgba(23,43,77,0.05)] focus:bg-white/80 focus:outline-none"
+                className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-[#0F172A] dark:text-[#F0F5FF] placeholder:text-[#1E293B]/75 dark:placeholder:text-[#8FA1C7]/70 bg-white/55 dark:bg-[#090F22] backdrop-blur-[2px] border border-white/80 dark:border-white/10 shadow-[inset_0_1px_2px_rgba(23,43,77,0.05)] focus:bg-white/80 dark:focus:bg-[#0E1733] focus:outline-none"
               />
               <NeuButton
                 type="submit"
@@ -509,29 +509,29 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#172B4D]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#172B4D] dark:text-[#F1F5F9]">
               Privacy Policy & Patient Data Governance
             </h1>
-            <p className="text-sm text-[#64748B] mt-1">
+            <p className="text-sm text-[#64748B] dark:text-[#A7B4CC] mt-1">
               Last Updated: October 2026 · TeleHealth Management System
             </p>
           </div>
           <NeuButton onClick={() => onNavigate('landing')}>Back to Home</NeuButton>
         </div>
 
-        <NeuCard className="space-y-4 text-sm leading-relaxed text-[#172B4D]">
+        <NeuCard className="space-y-4 text-sm leading-relaxed text-[#172B4D] dark:text-[#F1F5F9]">
           <h2 className="text-lg font-bold">1. Purpose & Clinical Confidentiality</h2>
-          <p className="text-[#64748B]">
+          <p className="text-[#64748B] dark:text-[#A7B4CC]">
             The TeleHealth Management System is engineered to protect patient confidentiality across every step of the consultation workflow. Sensitive clinical fields—including known allergies, current medications, existing medical conditions, and consultation summaries—are strictly scoped to authorized healthcare providers and the authenticated patient.
           </p>
 
           <h2 className="text-lg font-bold">2. Calendar & Scheduling Privacy</h2>
-          <p className="text-[#64748B]">
+          <p className="text-[#64748B] dark:text-[#A7B4CC]">
             Public and patient-facing availability calendars only return slot availability status (Available, Booked, Blocked, or Unavailable). No other patient’s identity, reason for visit, or clinical notes are ever transmitted through calendar endpoints.
           </p>
 
           <h2 className="text-lg font-bold">3. Authentication & Account Linking</h2>
-          <p className="text-[#64748B]">
+          <p className="text-[#64748B] dark:text-[#A7B4CC]">
             When signing in via Google Identity or standard clinic credentials, verified email addresses are matched server-side to prevent duplicate medical records. OAuth secrets, database credentials, and private session keys are never exposed in client-side code.
           </p>
         </NeuCard>
@@ -544,29 +544,29 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#172B4D]">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#172B4D] dark:text-[#F1F5F9]">
               Terms and Conditions of Service
             </h1>
-            <p className="text-sm text-[#64748B] mt-1">
+            <p className="text-sm text-[#64748B] dark:text-[#A7B4CC] mt-1">
               Standard Clinic Scheduling Rules & Patient Responsibilities
             </p>
           </div>
           <NeuButton onClick={() => onNavigate('landing')}>Back to Home</NeuButton>
         </div>
 
-        <NeuCard className="space-y-4 text-sm leading-relaxed text-[#172B4D]">
+        <NeuCard className="space-y-4 text-sm leading-relaxed text-[#172B4D] dark:text-[#F1F5F9]">
           <h2 className="text-lg font-bold">1. Standard Clinic Hours & 1-Hour Slot Boundaries</h2>
-          <p className="text-[#64748B]">
+          <p className="text-[#64748B] dark:text-[#A7B4CC]">
             Appointments are scheduled in 1-hour blocks during Morning Hours (7:00 AM–11:00 AM) and Afternoon Hours (1:00 PM–5:00 PM), up to a maximum of 8 standard slots per physician per day. Displayed end times represent exclusive slot boundaries.
           </p>
 
           <h2 className="text-lg font-bold">2. Cancellations, Rescheduling & Conflict Prevention</h2>
-          <p className="text-[#64748B]">
+          <p className="text-[#64748B] dark:text-[#A7B4CC]">
             All bookings are validated on the server using transaction-safe locks so two patients cannot reserve the same slot simultaneously. Cancellations or reschedule requests must be submitted at least 24 hours before the appointment start time.
           </p>
 
           <h2 className="text-lg font-bold">3. Non-Emergency Medical Disclaimer</h2>
-          <p className="text-[#64748B]">
+          <p className="text-[#64748B] dark:text-[#A7B4CC]">
             TeleHealth consultations and optional symptom assessments do not replace emergency medical care. In the event of a medical emergency, contact local emergency responders immediately.
           </p>
         </NeuCard>
@@ -600,8 +600,8 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
             <div className="w-12 h-12 rounded-2xl neu-raised-sm mx-auto flex items-center justify-center text-[#3478F6] mb-2">
               <Lock className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold text-[#172B4D]">Sign In to TeleHealth</h1>
-            <p className="text-xs text-[#64748B]">
+            <h1 className="text-2xl font-bold text-[#172B4D] dark:text-[#F1F5F9]">Sign In to TeleHealth</h1>
+            <p className="text-xs text-[#64748B] dark:text-[#A7B4CC]">
               {pendingBookingIntent
                 ? 'Please sign in or create an account to continue to your appointment booking.'
                 : 'Sign in with your account email and password to access your portal.'}
@@ -791,8 +791,8 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
       <div className="max-w-lg mx-auto py-10 px-4">
         <NeuCard size="lg" className="space-y-5">
           <div className="text-center space-y-1">
-            <h1 className="text-2xl font-bold text-[#172B4D]">Create Patient Account</h1>
-            <p className="text-xs text-[#64748B]">
+            <h1 className="text-2xl font-bold text-[#172B4D] dark:text-[#F1F5F9]">Create Patient Account</h1>
+            <p className="text-xs text-[#64748B] dark:text-[#A7B4CC]">
               Register once to manage your medical profile and book 1-hour clinic consultations.
             </p>
           </div>
@@ -954,8 +954,8 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
             <div className="w-11 h-11 rounded-2xl neu-raised-sm mx-auto flex items-center justify-center text-[#3478F6] mb-2">
               <KeyRound className="w-5 h-5" />
             </div>
-            <h1 className="text-xl font-bold text-[#172B4D]">Reset Account Password via Google OTP</h1>
-            <p className="text-xs text-[#64748B]">
+            <h1 className="text-xl font-bold text-[#172B4D] dark:text-[#F1F5F9]">Reset Account Password via Google OTP</h1>
+            <p className="text-xs text-[#64748B] dark:text-[#A7B4CC]">
               {resetStep === 'email' &&
                 'Enter your registered Google / Gmail address to receive a real 6-digit One-Time Password (OTP) in your Gmail inbox.'}
               {resetStep === 'otp' &&
@@ -1224,10 +1224,10 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
               heroVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'
             }`}
           >
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-[#172B4D] tracking-tight leading-[1.15]">
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-[#172B4D] dark:text-[#F1F5F9] tracking-tight leading-[1.15]">
               Healthcare, made easier.
             </h1>
-            <p className="text-base sm:text-lg text-[#64748B] max-w-2xl leading-relaxed">
+            <p className="text-base sm:text-lg text-[#64748B] dark:text-[#A7B4CC] max-w-2xl leading-relaxed">
               Book verified one-hour consultations, review real-time physician availability across specialized medical departments, and manage your clinical profile in one calm, trustworthy workspace.
             </p>
 
@@ -1240,13 +1240,6 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
               >
                 Book an Appointment
               </NeuButton>
-              <NeuButton
-                size="lg"
-                onClick={() => onNavigate('sign-in')}
-                icon={<ArrowRight className="w-4 h-4" />}
-              >
-                Sign In to Portal
-              </NeuButton>
             </div>
           </div>
 
@@ -1256,45 +1249,69 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
               heroVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6'
             }`}
           >
-            <NeuCard size="lg" className="space-y-4">
-              <div className="flex items-center justify-between border-b border-black/5 pb-3">
+            <NeuCard
+              size="lg"
+              className="!bg-white/95 dark:!bg-[#0D1527]/95 !border !border-slate-200/80 dark:!border-slate-800/90 !shadow-xl !shadow-slate-900/5 dark:!shadow-black/60 rounded-2xl !p-5 sm:!p-6 space-y-5"
+            >
+              {/* Header Strip */}
+              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
                 <div>
-                  <div className="text-xs font-semibold text-[#64748B]">Live Clinic Schedule Snapshot</div>
-                  <div className="text-sm font-bold text-[#172B4D]">Standard 1-Hour Consultation Windows</div>
-                </div>
-                <StatusIndicator status="Active" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="neu-inset rounded-xl p-3 space-y-1">
-                  <div className="font-semibold text-[#64748B]">Morning Roster</div>
-                  <div className="font-mono-tabular font-bold text-[#172B4D] text-sm">7:00 AM – 11:00 AM</div>
-                  <div className="text-[11px] text-[#16865C] font-medium">4 × 1-Hour Slots</div>
-                </div>
-                <div className="neu-inset rounded-xl p-3 space-y-1">
-                  <div className="font-semibold text-[#64748B]">Afternoon Roster</div>
-                  <div className="font-mono-tabular font-bold text-[#172B4D] text-sm">1:00 PM – 5:00 PM</div>
-                  <div className="text-[11px] text-[#16865C] font-medium">4 × 1-Hour Slots</div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-xs font-semibold text-[#172B4D]">Attending Specialists Today</div>
-                {doctors
-                  .filter((d) => d.status !== 'Inactive' && d.status !== 'Resigned')
-                  .slice(0, 3)
-                  .map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="neu-raised-sm rounded-xl p-3 flex items-center justify-between gap-2 text-xs"
-                  >
-                    <div>
-                      <div className="font-bold text-[#172B4D]">{doc.fullName}</div>
-                      <div className="text-[#64748B]">{doc.departmentName}</div>
-                    </div>
-                    <StatusIndicator status={doc.status} />
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#3478F6] dark:text-[#60A5FA]" />
+                    <span>Live Clinic Schedule Snapshot</span>
                   </div>
-                ))}
+                  <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                    Standard 1-Hour Consultation Windows
+                  </div>
+                </div>
+                <div className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 shrink-0" aria-hidden="true" />
+                  <span>Active</span>
+                </div>
+              </div>
+
+              {/* Morning & Afternoon Roster */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-xl p-3.5 space-y-1 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800/80">
+                  <div className="font-medium text-slate-500 dark:text-slate-400">Morning Roster</div>
+                  <div className="font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100 text-sm">7:00 AM – 11:00 AM</div>
+                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">4 × 1-Hour Slots</div>
+                </div>
+                <div className="rounded-xl p-3.5 space-y-1 bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800/80">
+                  <div className="font-medium text-slate-500 dark:text-slate-400">Afternoon Roster</div>
+                  <div className="font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100 text-sm">1:00 PM – 5:00 PM</div>
+                  <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">4 × 1-Hour Slots</div>
+                </div>
+              </div>
+
+              {/* Attending Specialists Today */}
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Attending Specialists Today
+                </div>
+                <div className="divide-y divide-slate-200/60 dark:divide-slate-800/80 border border-slate-200/70 dark:border-slate-800/80 rounded-xl bg-slate-50/50 dark:bg-slate-800/20 overflow-hidden">
+                  {doctors
+                    .filter((d) => d.status !== 'Inactive' && d.status !== 'Resigned')
+                    .slice(0, 3)
+                    .map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs hover:bg-slate-100/60 dark:hover:bg-slate-800/50 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+                            {doc.fullName}
+                          </div>
+                          <div className="text-slate-500 dark:text-slate-400 text-[11px] truncate">
+                            {doc.departmentName}
+                          </div>
+                        </div>
+                        <div className="shrink-0">
+                          <StatusIndicator status={doc.status} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
               </div>
             </NeuCard>
           </div>
@@ -1311,8 +1328,8 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-[#172B4D]">Clinical Departments & Services</h2>
-            <p className="text-sm text-[#64748B] mt-1">
+            <h2 className="text-2xl font-bold text-[#172B4D] dark:text-[#F1F5F9]">Clinical Departments & Services</h2>
+            <p className="text-sm text-[#64748B] dark:text-[#A7B4CC] mt-1">
               Configurable outpatient departments and standardized 60-minute consultation types.
             </p>
           </div>
@@ -1325,28 +1342,28 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
           {departments.map((dept) => (
             <NeuCard
               key={dept.id}
-              className="group flex flex-col justify-between gap-4 border border-transparent transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#3478F6]/40 hover:bg-white/40 cursor-pointer"
+              className="group flex flex-col justify-between gap-4 border border-transparent transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-[#3478F6]/40 hover:bg-white/40 dark:hover:bg-white/5 cursor-pointer"
               onClick={onBookAppointmentClick}
             >
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-[#64748B]">
-                  <span className="font-mono-tabular font-semibold text-[#3478F6]">DEPT · {dept.code}</span>
+                <div className="flex items-center justify-between text-xs text-[#64748B] dark:text-[#A7B4CC]">
+                  <span className="font-mono-tabular font-semibold text-[#3478F6] dark:text-[#60A5FA]">DEPT · {dept.code}</span>
                   <span>{dept.doctorCount} Attending Physician(s)</span>
                 </div>
-                <h3 className="text-base font-bold text-[#172B4D] group-hover:text-[#3478F6] transition-colors">
+                <h3 className="text-base font-bold text-[#172B4D] dark:text-[#F1F5F9] group-hover:text-[#3478F6] dark:group-hover:text-[#60A5FA] transition-colors">
                   {dept.name}
                 </h3>
-                <p className="text-xs text-[#64748B] leading-relaxed">{dept.description}</p>
+                <p className="text-xs text-[#64748B] dark:text-[#A7B4CC] leading-relaxed">{dept.description}</p>
               </div>
-              <div className="pt-3 border-t border-black/5 flex items-center justify-between text-xs">
-                <span className="text-[#64748B]">Lead: <strong className="text-[#172B4D]">{dept.headDoctorName}</strong></span>
+              <div className="pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between text-xs">
+                <span className="text-[#64748B] dark:text-[#A7B4CC]">Lead: <strong className="text-[#172B4D] dark:text-[#F1F5F9]">{dept.headDoctorName}</strong></span>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onBookAppointmentClick();
                   }}
-                  className="text-[#3478F6] font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center cursor-pointer"
+                  className="text-[#3478F6] dark:text-[#60A5FA] font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center cursor-pointer"
                 >
                   Book Slot →
                 </button>
@@ -1357,22 +1374,22 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
       </section>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 border-t border-black/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B]">
+      <footer className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B] dark:text-[#A7B4CC]">
         <div>
-          <strong className="text-[#172B4D]">TeleHealth Management System</strong> · Outpatient & Clinical Scheduling Platform
+          <strong className="text-[#172B4D] dark:text-[#F1F5F9]">TeleHealth Management System</strong> · Outpatient & Clinical Scheduling Platform
         </div>
         <div className="flex flex-wrap items-center gap-5">
           <button
             type="button"
             onClick={() => onNavigate('privacy-policy')}
-            className="hover:text-[#172B4D] cursor-pointer"
+            className="hover:text-[#172B4D] dark:hover:text-[#F1F5F9] cursor-pointer"
           >
             Privacy Policy
           </button>
           <button
             type="button"
             onClick={() => onNavigate('terms-conditions')}
-            className="hover:text-[#172B4D] cursor-pointer"
+            className="hover:text-[#172B4D] dark:hover:text-[#F1F5F9] cursor-pointer"
           >
             Terms & Conditions
           </button>

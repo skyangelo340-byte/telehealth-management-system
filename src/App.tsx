@@ -51,6 +51,7 @@ import {
   saveAuditLogToDb,
   saveSystemSettingsToDb,
 } from './services/firestoreService';
+import { saveReceiptToIndexedDb } from './services/indexedDbService';
 import { AppShell } from './components/layout/AppShell';
 import { PublicPages } from './pages/public/PublicPages';
 import {
@@ -214,7 +215,6 @@ export default function App() {
       }
     : null;
 
-  // Booking form draft state (preserved across backward/forward navigation)
   const [bookingDraft, setBookingDraft] = useState<BookingDraftState>({
     fullName: activePatient.fullName,
     dateOfBirth: activePatient.dateOfBirth,
@@ -237,6 +237,7 @@ export default function App() {
     timeLabel: '8:00 AM – 9:00 AM',
     reasonForVisit: '',
     agreedToTerms: false,
+    paymentMethod: 'GCash',
   });
 
   const [lastBookedAppointment, setLastBookedAppointment] = useState<Appointment | null>(null);
@@ -608,7 +609,10 @@ export default function App() {
   };
 
   // Transaction-safe Booking Submission
-  const handleSubmitBooking = async (): Promise<{
+  const handleSubmitBooking = async (
+    receiptBase64?: string,
+    receiptSubmittedAt?: string
+  ): Promise<{
     success: boolean;
     appointment?: Appointment;
     error?: string;
@@ -659,6 +663,11 @@ export default function App() {
       currentMedicationsSnapshot: bookingDraft.currentMedications || 'None reported',
       existingConditionsSnapshot: bookingDraft.existingMedicalConditions || 'None reported',
       status: 'Pending',
+      paymentStatus: receiptBase64 ? 'Payment Pending Verification' : 'Pending Payment',
+      paymentAmountPhp: systemSettings.consultationFeePhp || 10,
+      paymentMethod: 'Manual Clinic QR Code',
+      paymentReceiptUrl: receiptBase64,
+      paymentSubmittedAt: receiptSubmittedAt || new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isDemoData: true,
@@ -669,46 +678,189 @@ export default function App() {
     setLastBookedAppointment(newApt);
     setSelectedAppointment(newApt);
 
+    if (receiptBase64) {
+      saveReceiptToIndexedDb(newApt.id, receiptBase64);
+    }
+
     const patNotif: NotificationItem = {
       id: `notif-${Date.now()}-pat`,
       recipientRole: 'patient',
       recipientId: activePatient.id,
       type: 'New Appointment Request',
-      title: `Booking Request Submitted — ${refNum}`,
-      message: `Your ${aptType.name} request with ${doc.fullName} on ${formatReadableDate(newApt.date)} (${newApt.timeLabel}) is pending confirmation.`,
+      title: `Receipt Submitted — ${refNum}`,
+      message: `Your payment receipt for ${aptType.name} with ${doc.fullName} on ${formatReadableDate(newApt.date)} (${newApt.timeLabel}) was submitted and is pending admin verification.`,
       appointmentId: newApt.id,
       appointmentRef: refNum,
       read: false,
       createdAt: new Date().toISOString(),
     };
-    const docNotif: NotificationItem = {
-      id: `notif-${Date.now()}-doc`,
-      recipientRole: 'doctor',
-      recipientId: doc.id,
+    const adminNotif: NotificationItem = {
+      id: `notif-${Date.now()}-admin`,
+      recipientRole: 'admin',
+      recipientId: 'usr-admin-main',
       type: 'New Appointment Request',
-      title: `New Pending Request — ${refNum}`,
-      message: `${bookingDraft.fullName} requested ${newApt.timeLabel} on ${formatReadableDate(newApt.date)}.`,
+      title: `Payment Receipt Verification Needed — ${refNum}`,
+      message: `${bookingDraft.fullName} submitted a payment receipt screenshot for ₱${newApt.paymentAmountPhp || 10}.00 PHP (${refNum}). Please verify in Admin Payment Verification.`,
       appointmentId: newApt.id,
       appointmentRef: refNum,
       read: false,
       createdAt: new Date().toISOString(),
     };
 
-    // Notify Patient & Doctor
-    setNotifications((prev) => [patNotif, docNotif, ...prev]);
+    setNotifications((prev) => [patNotif, adminNotif, ...prev]);
     saveNotificationToDb(patNotif);
-    saveNotificationToDb(docNotif);
+    saveNotificationToDb(adminNotif);
 
     appendAuditLog(
       bookingDraft.fullName,
       'patient',
-      'Submitted Appointment Request',
+      'Submitted Appointment Request & Payment Receipt',
       'Appointment',
       refNum,
-      `Reserved 1-hour slot ${newApt.timeLabel} on ${newApt.date} with ${doc.fullName}.`
+      `Uploaded payment receipt screenshot for 1-hour slot ${newApt.timeLabel} on ${newApt.date} with ${doc.fullName}. Status: Payment Pending Verification.`
     );
 
     return { success: true, appointment: newApt };
+  };
+
+  const handleAdminConfirmPayment = (aptId: string) => {
+    const target = appointments.find((a) => a.id === aptId);
+    if (!target) return;
+
+    const isOnline = (target.consultationMode || 'Online Appointment') === 'Online Appointment';
+    const resolvedMeetLink = isOnline
+      ? (target.googleMeetLink || `https://meet.google.com/thc-${target.referenceNumber.slice(-4).toLowerCase()}-med`)
+      : undefined;
+
+    const updatedApt: Appointment = {
+      ...target,
+      status: 'Confirmed',
+      paymentStatus: 'Paid',
+      googleMeetLink: resolvedMeetLink ?? target.googleMeetLink,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setAppointments((prev) => prev.map((a) => (a.id === aptId ? updatedApt : a)));
+    saveAppointmentToDb(updatedApt);
+
+    if (selectedAppointment?.id === aptId) {
+      setSelectedAppointment(updatedApt);
+    }
+
+    const patNotif: NotificationItem = {
+      id: `notif-${Date.now()}-pay-conf`,
+      recipientRole: 'patient',
+      recipientId: target.patientId,
+      type: 'Appointment Confirmation',
+      title: `Payment Verified & Appointment Confirmed — ${target.referenceNumber}`,
+      message: `Your payment of ₱${target.paymentAmountPhp || 10}.00 PHP was verified by clinic admin! Your appointment with ${target.doctorName} for ${formatReadableDate(target.date)} at ${target.timeLabel} is now officially confirmed.`,
+      appointmentId: target.id,
+      appointmentRef: target.referenceNumber,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    setNotifications((prev) => [patNotif, ...prev]);
+    saveNotificationToDb(patNotif);
+
+    appendAuditLog(
+      currentUser?.fullName || 'Admin',
+      'admin',
+      'Verified Payment Receipt & Confirmed Appointment',
+      'Appointment',
+      target.referenceNumber,
+      `Verified manual QR receipt payment for booking ${target.referenceNumber} (${target.patientName}). Updated paymentStatus=Paid and status=Confirmed.`
+    );
+  };
+
+  const handleAdminRejectPayment = (aptId: string, reason: string) => {
+    const target = appointments.find((a) => a.id === aptId);
+    if (!target) return;
+
+    const updatedApt: Appointment = {
+      ...target,
+      paymentStatus: 'Rejected',
+      rejectionReason: reason.trim() || 'Receipt screenshot unreadable or incomplete. Please resubmit a clear screenshot.',
+      updatedAt: new Date().toISOString(),
+    };
+
+    setAppointments((prev) => prev.map((a) => (a.id === aptId ? updatedApt : a)));
+    saveAppointmentToDb(updatedApt);
+
+    if (selectedAppointment?.id === aptId) {
+      setSelectedAppointment(updatedApt);
+    }
+
+    const patNotif: NotificationItem = {
+      id: `notif-${Date.now()}-pay-rej`,
+      recipientRole: 'patient',
+      recipientId: target.patientId,
+      type: 'Appointment Rejection',
+      title: `Payment Receipt Rejected — ${target.referenceNumber}`,
+      message: `Your payment receipt for booking ${target.referenceNumber} was declined by admin. Reason: ${updatedApt.rejectionReason}. Please upload a new receipt screenshot in My Appointments.`,
+      appointmentId: target.id,
+      appointmentRef: target.referenceNumber,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    setNotifications((prev) => [patNotif, ...prev]);
+    saveNotificationToDb(patNotif);
+
+    appendAuditLog(
+      currentUser?.fullName || 'Admin',
+      'admin',
+      'Rejected Payment Receipt Screenshot',
+      'Appointment',
+      target.referenceNumber,
+      `Declined payment receipt screenshot for booking ${target.referenceNumber}. Reason: ${updatedApt.rejectionReason}`
+    );
+  };
+
+  const handlePatientResubmitReceipt = (aptId: string, receiptBase64: string) => {
+    const target = appointments.find((a) => a.id === aptId);
+    if (!target) return;
+
+    const updatedApt: Appointment = {
+      ...target,
+      paymentStatus: 'Payment Pending Verification',
+      paymentReceiptUrl: receiptBase64,
+      paymentSubmittedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setAppointments((prev) => prev.map((a) => (a.id === aptId ? updatedApt : a)));
+    saveAppointmentToDb(updatedApt);
+    saveReceiptToIndexedDb(aptId, receiptBase64);
+
+    if (selectedAppointment?.id === aptId) {
+      setSelectedAppointment(updatedApt);
+    }
+
+    const adminNotif: NotificationItem = {
+      id: `notif-${Date.now()}-resub`,
+      recipientRole: 'admin',
+      recipientId: 'usr-admin-main',
+      type: 'New Appointment Request',
+      title: `New Payment Receipt Resubmitted — ${target.referenceNumber}`,
+      message: `${target.patientName} uploaded a replacement receipt screenshot for booking ${target.referenceNumber}. Please verify in Admin Payment Verification.`,
+      appointmentId: target.id,
+      appointmentRef: target.referenceNumber,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    setNotifications((prev) => [adminNotif, ...prev]);
+    saveNotificationToDb(adminNotif);
+
+    appendAuditLog(
+      target.patientName,
+      'patient',
+      'Resubmitted Payment Receipt Screenshot',
+      'Appointment',
+      target.referenceNumber,
+      `Uploaded replacement receipt screenshot for booking ${target.referenceNumber}. Status: Payment Pending Verification.`
+    );
   };
 
   // Appointment Status Handlers
@@ -1194,6 +1346,7 @@ export default function App() {
               setSelectedAppointment(apt);
               setCurrentScreen('patient-appointment-details');
             }}
+            systemSettings={systemSettings}
           />
         );
       }
@@ -1256,6 +1409,7 @@ export default function App() {
           assessments={assessments}
           onAddAssessmentSummary={(s) => setAssessments((prev) => [s, ...prev])}
           onAcknowledgeDelayWait={handleAcknowledgeDelayWait}
+          onResubmitPaymentReceipt={handlePatientResubmitReceipt}
         />
       );
     }
@@ -1726,6 +1880,8 @@ export default function App() {
           );
         }}
         onConfirmAppointment={handleConfirmAppointment}
+        onConfirmPayment={handleAdminConfirmPayment}
+        onRejectPayment={handleAdminRejectPayment}
         onOpenCancelModal={(apt) => setCancelModalApt(apt)}
         onOpenRescheduleModal={(apt) => setRescheduleModalApt(apt)}
         auditLogs={auditLogs}

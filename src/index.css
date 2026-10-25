@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --bg-main: #EAF0FF;
@@ -25,14 +27,14 @@
   }
 
   html.dark {
-    --bg-main: #0D152C;
-    --bg-secondary: #111C38;
+    --bg-main: #0B1020;
+    --bg-secondary: #10172A;
     --bg-raised: #142040;
     --primary-blue: #3380FF;
     --secondary-blue: #1D56EB;
     --accent-cyan: #66C8FF;
-    --text-navy: #F0F5FF;
-    --text-secondary: #8FA1C7;
+    --text-navy: #F1F5F9;
+    --text-secondary: #A7B4CC;
     --color-success: #2DD498;
     --color-warning: #FBBF24;
     --color-error: #F87171;
@@ -40,8 +42,8 @@
 
     --surface-grad-start: #162447;
     --surface-grad-end: #101B37;
-    --inset-bg: #0B1226;
-    --shadow-dark: rgba(5, 9, 20, 0.72);
+    --inset-bg: #090F22;
+    --shadow-dark: rgba(3, 6, 16, 0.72);
     --shadow-light: rgba(38, 60, 112, 0.36);
     --border-highlight: rgba(102, 200, 255, 0.14);
     --border-inset: rgba(102, 200, 255, 0.09);
@@ -246,20 +248,278 @@ textarea.neu-inset:focus {
     0 0 0 3px rgba(38, 116, 255, 0.16);
 }
 
-/* Dark Mode Overrides for Legacy Hardcoded Palette Utility Classes */
+/* ==========================================================================
+   Comprehensive WCAG-Compliant Dark Mode System Overrides
+   ========================================================================== */
+
+html.dark,
+html.dark body {
+  background: linear-gradient(145deg, var(--bg-main) 0%, var(--bg-secondary) 100%) !important;
+  color: var(--text-navy) !important;
+}
+
+/* 1. Primary Text & Headings */
 html.dark .text-\[\#172B4D\],
-html.dark .text-\[\#101B45\] {
-  color: #F0F5FF !important;
+html.dark .text-\[\#101B45\],
+html.dark .text-\[\#0F172A\],
+html.dark .text-\[\#1E293B\],
+html.dark .text-\[\#334155\],
+html.dark .text-\[\#111827\],
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-neutral-900 {
+  color: var(--text-navy) !important;
 }
 
+/* 2. Secondary Text, Subtitles, Meta & Helpers */
 html.dark .text-\[\#64748B\],
-html.dark .text-\[\#68789D\] {
-  color: #94A6CC !important;
+html.dark .text-\[\#68789D\],
+html.dark .text-\[\#475569\],
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+  color: var(--text-secondary) !important;
 }
 
+/* 3. Accessible Functional Status & Accent Colors in Dark Mode */
+html.dark .text-\[\#1D4ED8\],
+html.dark .text-\[\#1E3A8A\],
+html.dark .text-\[\#1E40AF\] {
+  color: #60A5FA !important;
+}
+
+html.dark .text-\[\#16865C\],
+html.dark .text-\[\#12805C\] {
+  color: var(--color-success) !important;
+}
+
+html.dark .text-\[\#C87A14\],
+html.dark .text-\[\#C68117\] {
+  color: var(--color-warning) !important;
+}
+
+html.dark .text-\[\#D63649\],
+html.dark .text-\[\#C63D4D\],
+html.dark .text-\[\#B82538\] {
+  color: var(--color-error) !important;
+}
+
+/* 4. Background Containers, Shells & Drawers */
 html.dark .bg-\[\#E9EEF3\],
-html.dark .bg-\[\#EAF0FF\] {
-  background-color: #0D152C !important;
+html.dark .bg-\[\#EAF0FF\],
+html.dark .bg-\[\#E2E9F2\],
+html.dark .bg-\[\#E3EAFB\],
+html.dark .bg-\[\#E5ECFB\],
+html.dark .bg-\[\#DDE6F1\],
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-gray-50,
+html.dark .bg-gray-100 {
+  background-color: var(--bg-main) !important;
+}
+
+html.dark header.bg-\[\#E9EEF3\]\/95,
+html.dark aside.bg-\[\#E9EEF3\],
+html.dark .bg-\[\#E9EEF3\]\/95 {
+  background-color: var(--bg-secondary) !important;
+  border-color: rgba(102, 200, 255, 0.12) !important;
+}
+
+html.dark .bg-white {
+  background-color: var(--bg-raised) !important;
+}
+
+html.dark .bg-white\/10,
+html.dark .bg-white\/20,
+html.dark .bg-white\/25,
+html.dark .bg-white\/30,
+html.dark .bg-white\/40,
+html.dark .bg-white\/50,
+html.dark .bg-white\/55,
+html.dark .bg-white\/60,
+html.dark .bg-white\/65,
+html.dark .bg-white\/70,
+html.dark .bg-white\/75,
+html.dark .bg-white\/80,
+html.dark .bg-white\/90,
+html.dark .bg-white\/95 {
+  background-color: rgba(22, 36, 71, 0.72) !important;
+}
+
+html.dark .hover\:bg-white\/30:hover,
+html.dark .hover\:bg-white\/40:hover,
+html.dark .hover\:bg-white\/60:hover,
+html.dark .hover\:bg-white:hover {
+  background-color: rgba(51, 80, 143, 0.45) !important;
+}
+
+/* 5. Borders, Dividers & Outlines */
+html.dark .border-black\/5,
+html.dark .border-black\/10,
+html.dark .border-black\/15,
+html.dark .border-black\/20,
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-white\/30,
+html.dark .border-white\/45,
+html.dark .border-white\/70,
+html.dark .border-white\/80 {
+  border-color: rgba(102, 200, 255, 0.14) !important;
+}
+
+html.dark .divide-black\/5 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-black\/10 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(102, 200, 255, 0.12) !important;
+}
+
+/* 6. Neumorphic Primitives & Soft UI Shadows in Dark Mode */
+html.dark .neu-raised,
+html.dark .neu-surface {
+  background: linear-gradient(145deg, #162447, #101B37) !important;
+  border-color: rgba(102, 200, 255, 0.14) !important;
+  box-shadow:
+    8px 10px 22px rgba(3, 6, 16, 0.72),
+    -6px -6px 18px rgba(38, 60, 112, 0.22),
+    inset 1px 1px 1.5px rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .neu-raised-sm {
+  background: linear-gradient(145deg, #162447, #101B37) !important;
+  border-color: rgba(102, 200, 255, 0.14) !important;
+  box-shadow:
+    5px 6px 14px rgba(3, 6, 16, 0.65),
+    -4px -4px 12px rgba(38, 60, 112, 0.2) !important;
+}
+
+html.dark .neu-raised-lg {
+  background: linear-gradient(145deg, #18284E, #111E3B) !important;
+  border-color: rgba(102, 200, 255, 0.16) !important;
+  box-shadow:
+    14px 16px 32px rgba(2, 4, 12, 0.8),
+    -10px -10px 26px rgba(38, 60, 112, 0.25) !important;
+}
+
+html.dark .neu-btn {
+  background: linear-gradient(145deg, #192A52, #121F3E) !important;
+  border-color: rgba(102, 200, 255, 0.15) !important;
+  color: var(--text-navy) !important;
+  box-shadow:
+    5px 6px 14px rgba(2, 5, 14, 0.65),
+    -4px -4px 10px rgba(38, 60, 112, 0.2) !important;
+}
+
+html.dark .neu-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, #203668, #16264C) !important;
+  color: #FFFFFF !important;
+}
+
+html.dark .neu-btn:active:not(:disabled),
+html.dark .neu-btn-active {
+  background: #090F22 !important;
+  box-shadow:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.7),
+    inset -3px -3px 7px rgba(38, 60, 112, 0.15) !important;
+}
+
+html.dark .neu-inset,
+html.dark .neu-inset-sm {
+  background: #090F22 !important;
+  border-color: rgba(102, 200, 255, 0.12) !important;
+  color: var(--text-navy) !important;
+  box-shadow:
+    inset 4px 4px 9px rgba(0, 0, 0, 0.65),
+    inset -3px -3px 8px rgba(38, 60, 112, 0.14) !important;
+}
+
+/* 7. Forms, Inputs, Selects & Placeholders */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #090F22 !important;
+  color: var(--text-navy) !important;
+  border-color: rgba(102, 200, 255, 0.15) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder,
+html.dark select::placeholder,
+html.dark .placeholder\:text-\[\#68789D\]\/70::placeholder,
+html.dark .placeholder\:text-\[\#64748B\]::placeholder,
+html.dark .placeholder\:text-\[\#1E293B\]\/75::placeholder {
+  color: #8FA1C7 !important;
+  opacity: 0.85 !important;
+}
+
+html.dark select option {
+  background-color: #0F172A;
+  color: #F1F5F9;
+}
+
+/* 8. Public Hero, Overview Section & Background Layer - Strict Theme Scoping */
+html:not(.dark) main {
+  background-color: #E9EEF3 !important;
+  background-image:
+    radial-gradient(ellipse 80% 55% at 18% 12%, rgba(52, 120, 246, 0.14), transparent 65%),
+    radial-gradient(ellipse 75% 55% at 85% 82%, rgba(22, 134, 92, 0.10), transparent 65%),
+    linear-gradient(180deg, #E2E9F2 0%, #E9EEF3 45%, #DDE6F1 100%) !important;
+}
+
+html:not(.dark) section#overview,
+html:not(.dark) section#departments {
+  background-color: transparent !important;
+}
+
+html:not(.dark) div[class*="mask-image:radial-gradient"] {
+  background-image:
+    linear-gradient(to right, rgba(23, 43, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(23, 43, 77, 0.035) 1px, transparent 1px) !important;
+}
+
+html.dark main {
+  background-color: #0B1020 !important;
+  background-image:
+    radial-gradient(ellipse 80% 55% at 18% 12%, rgba(52, 120, 246, 0.12), transparent 65%),
+    radial-gradient(ellipse 75% 55% at 85% 82%, rgba(22, 134, 92, 0.08), transparent 65%),
+    linear-gradient(180deg, #0B1020 0%, #10172A 50%, #0B1020 100%) !important;
+}
+
+html.dark section#overview,
+html.dark section#departments {
+  background-color: transparent !important;
+}
+
+/* Subtle dark coordinate grid overlay */
+html.dark div[class*="mask-image:radial-gradient"] {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px) !important;
+}
+
+/* 9. Official Reseta Paper Pad Sheet In Dark Mode (Prevents white-on-white text) */
+html.dark .prescription-paper-preview {
+  background-color: #0E1731 !important;
+  border-color: rgba(102, 200, 255, 0.22) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65) !important;
+}
+
+html.dark .prescription-paper-preview .bg-slate-50 {
+  background-color: #142044 !important;
+  border-color: rgba(102, 200, 255, 0.14) !important;
+}
+
+html.dark .prescription-paper-preview .text-slate-700,
+html.dark .prescription-paper-preview .text-slate-600,
+html.dark .prescription-paper-preview .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+html.dark .prescription-paper-preview .border-slate-200 {
+  border-color: rgba(102, 200, 255, 0.14) !important;
 }
 
 /* Focus accessibility */

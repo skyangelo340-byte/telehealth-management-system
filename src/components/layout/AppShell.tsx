@@ -29,6 +29,9 @@ import {
   NotificationItem,
 } from '../../types';
 import { NeuButton, NeuModal } from '../ui/NeumorphicPrimitives';
+import { LanguageSelector } from '../common/LanguageSelector';
+import { DarkModeToggle } from '../common/DarkModeToggle';
+import { SettingsPopover } from '../common/SettingsPopover';
 
 interface AppShellProps {
   currentRole: UserRole;
@@ -63,6 +66,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [guestMobileMenuOpen, setGuestMobileMenuOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
 
@@ -83,13 +87,14 @@ export const AppShell: React.FC<AppShellProps> = ({
   // PUBLIC / GUEST SHELL: Enforces the 3-Zone Top Bar Contract
   if (currentRole === 'guest') {
     return (
-      <div className="min-h-screen flex flex-col bg-[#E9EEF3] text-[#172B4D]">
+      <div className="min-h-screen flex flex-col bg-[#E9EEF3] dark:bg-[#0B1020] text-[#172B4D] dark:text-[#F1F5F9]">
         {/* Top Bar Contract: Zone 1 (Single wordmark) — Zone 2 (4-5 clean text links) — Zone 3 (1-2 primary actions) */}
-        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 dark:bg-[#0B1020]/95 backdrop-blur-xs border-b border-black/5 dark:border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between">
           {/* Zone 1: Single text element wordmark */}
           <button
             type="button"
             onClick={() => {
+              setGuestMobileMenuOpen(false);
               onNavigate('landing');
               setTimeout(() => {
                 const el = document.getElementById('overview');
@@ -97,13 +102,13 @@ export const AppShell: React.FC<AppShellProps> = ({
                 else window.scrollTo({ top: 0, behavior: 'smooth' });
               }, 30);
             }}
-            className="text-lg font-extrabold tracking-tight text-[#172B4D] font-display cursor-pointer whitespace-nowrap"
+            className="text-lg font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display cursor-pointer whitespace-nowrap"
           >
             TeleHealth
           </button>
 
           {/* Zone 2: Clean text navigation links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#64748B]" aria-label="Public navigation">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#64748B] dark:text-[#A7B4CC]" aria-label="Public navigation">
             <button
               type="button"
               onClick={() => {
@@ -114,7 +119,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                   else window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 30);
               }}
-              className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
+              className="hover:text-[#172B4D] dark:hover:text-[#F1F5F9] transition-colors cursor-pointer whitespace-nowrap"
             >
               Overview
             </button>
@@ -129,44 +134,151 @@ export const AppShell: React.FC<AppShellProps> = ({
                   }, 50);
                 }
               }}
-              className="hover:text-[#172B4D] transition-colors whitespace-nowrap"
+              className="hover:text-[#172B4D] dark:hover:text-[#F1F5F9] transition-colors whitespace-nowrap"
             >
               Departments
             </a>
             <button
               type="button"
               onClick={() => onNavigate('telehealth-assessment')}
-              className="hover:text-[#172B4D] transition-colors cursor-pointer whitespace-nowrap"
+              className="hover:text-[#172B4D] dark:hover:text-[#F1F5F9] transition-colors cursor-pointer whitespace-nowrap"
             >
               Symptom Assessment
             </button>
           </nav>
 
-          {/* Zone 3: 1-2 primary actions */}
-          <div className="flex items-center gap-3">
-            <NeuButton size="sm" onClick={() => onNavigate('sign-in')}>
-              Sign In
-            </NeuButton>
-            <NeuButton variant="primary" size="sm" onClick={onBookAppointmentClick}>
-              Book Appointment
-            </NeuButton>
+          {/* Zone 3: Settings popover & primary actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <SettingsPopover className="hidden sm:inline-block" />
+
+            <div className="hidden sm:flex items-center gap-2 sm:gap-3">
+              <NeuButton size="sm" onClick={() => onNavigate('sign-in')}>
+                Sign In
+              </NeuButton>
+              <NeuButton variant="primary" size="sm" onClick={onBookAppointmentClick}>
+                Book Appointment
+              </NeuButton>
+            </div>
+            <div className="flex sm:hidden items-center">
+              <NeuButton variant="primary" size="sm" onClick={onBookAppointmentClick}>
+                Book
+              </NeuButton>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGuestMobileMenuOpen(!guestMobileMenuOpen)}
+              aria-label={guestMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={guestMobileMenuOpen}
+              className="md:hidden neu-btn w-9 h-9 rounded-xl flex items-center justify-center text-[#172B4D] dark:text-[#F1F5F9] cursor-pointer"
+            >
+              {guestMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </header>
 
-        <main className="relative isolate overflow-hidden flex-1 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_85%_82%,rgba(22,134,92,0.10),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)]">
+        {/* Mobile Navigation Drawer for Guest */}
+        {guestMobileMenuOpen && (
+          <div
+            className="md:hidden fixed inset-x-0 top-[57px] bottom-0 z-40 bg-[#172B4D]/30 dark:bg-black/60 backdrop-blur-xs flex flex-col"
+            onClick={() => setGuestMobileMenuOpen(false)}
+          >
+            <div
+              className="bg-[#E9EEF3] dark:bg-[#10172A] border-b border-black/10 dark:border-white/10 shadow-lg px-5 py-4 space-y-4 animate-in slide-in-from-top-2 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <nav className="flex flex-col space-y-2 text-sm font-semibold text-[#172B4D] dark:text-[#F1F5F9]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuestMobileMenuOpen(false);
+                    onNavigate('landing');
+                    setTimeout(() => {
+                      const el = document.getElementById('overview');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      else window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 30);
+                  }}
+                  className="w-full text-left py-2.5 px-3.5 rounded-xl neu-btn text-xs font-semibold hover:text-[#3478F6] transition-colors cursor-pointer"
+                >
+                  Overview
+                </button>
+                <a
+                  href="#departments"
+                  onClick={(e) => {
+                    setGuestMobileMenuOpen(false);
+                    if (currentScreen !== 'landing') {
+                      e.preventDefault();
+                      onNavigate('landing');
+                      setTimeout(() => {
+                        document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 50);
+                    } else {
+                      setTimeout(() => {
+                        document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 50);
+                    }
+                  }}
+                  className="w-full text-left py-2.5 px-3.5 rounded-xl neu-btn text-xs font-semibold hover:text-[#3478F6] transition-colors"
+                >
+                  Departments
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuestMobileMenuOpen(false);
+                    onNavigate('telehealth-assessment');
+                  }}
+                  className="w-full text-left py-2.5 px-3.5 rounded-xl neu-btn text-xs font-semibold hover:text-[#3478F6] transition-colors cursor-pointer"
+                >
+                  Symptom Assessment
+                </button>
+              </nav>
+
+              <div className="pt-3 border-t border-black/5 dark:border-white/10 flex flex-col gap-2.5">
+                <DarkModeToggle variant="mobile" />
+                <LanguageSelector variant="mobile" />
+                <div className="flex flex-col gap-2 pt-1">
+                  <NeuButton
+                    size="sm"
+                    className="w-full justify-center"
+                    onClick={() => {
+                      setGuestMobileMenuOpen(false);
+                      onNavigate('sign-in');
+                    }}
+                  >
+                    Sign In
+                  </NeuButton>
+                  <NeuButton
+                    variant="primary"
+                    size="sm"
+                    className="w-full justify-center"
+                    onClick={() => {
+                      setGuestMobileMenuOpen(false);
+                      onBookAppointmentClick();
+                    }}
+                  >
+                    Book Appointment
+                  </NeuButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <main className="relative isolate overflow-hidden flex-1 bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.14),transparent_65%),radial-gradient(ellipse_75%_55%_at_85%_82%,rgba(22,134,92,0.10),transparent_65%),linear-gradient(180deg,#E2E9F2_0%,#E9EEF3_45%,#DDE6F1_100%)] dark:bg-[#0B1020] dark:bg-[radial-gradient(ellipse_80%_55%_at_18%_12%,rgba(52,120,246,0.12),transparent_65%),radial-gradient(ellipse_75%_55%_at_85%_82%,rgba(22,134,92,0.08),transparent_65%),linear-gradient(180deg,#0B1020_0%,#10172A_50%,#0B1020_100%)]">
           {/* Designed Architectural Clinical Background Layer */}
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
             {/* Precision Clinical Coordinate Grid */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(23,43,77,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(23,43,77,0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_90%_85%_at_50%_35%,#000_55%,transparent_100%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(23,43,77,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(23,43,77,0.035)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_90%_85%_at_50%_35%,#000_55%,transparent_100%)]" />
 
             {/* Soft Ambient Light Accents */}
-            <div className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[#3478F6]/12 blur-3xl" />
-            <div className="absolute top-[28%] -right-28 w-[440px] h-[440px] rounded-full bg-[#60A5FA]/14 blur-3xl" />
-            <div className="absolute -bottom-28 left-[22%] w-[520px] h-[360px] rounded-full bg-[#16865C]/8 blur-3xl" />
+            <div className="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[#3478F6]/12 dark:bg-[#3478F6]/15 blur-3xl pointer-events-none" />
+            <div className="absolute top-[28%] -right-28 w-[440px] h-[440px] rounded-full bg-[#60A5FA]/14 dark:bg-[#60A5FA]/8 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-28 left-[22%] w-[520px] h-[360px] rounded-full bg-[#16865C]/8 dark:bg-[#16865C]/5 blur-3xl pointer-events-none" />
 
             {/* Subtle Architectural Contour Rings & Medical Crosshair Accents */}
             <svg
-              className="absolute top-0 right-0 w-[680px] h-[680px] text-[#3478F6]/[0.07] -translate-y-1/4 translate-x-1/5"
+              className="absolute top-0 right-0 w-[680px] h-[680px] text-[#3478F6]/[0.07] dark:text-[#3478F6]/[0.10] -translate-y-1/4 translate-x-1/5 pointer-events-none"
               viewBox="0 0 600 600"
               fill="none"
             >
@@ -177,7 +289,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             </svg>
 
             <svg
-              className="absolute bottom-8 left-0 w-[560px] h-[320px] text-[#172B4D]/[0.045] -translate-x-16"
+              className="absolute bottom-8 left-0 w-[560px] h-[320px] text-[#172B4D]/[0.045] dark:text-white/[0.04] -translate-x-16 pointer-events-none"
               viewBox="0 0 560 320"
               fill="none"
             >
@@ -243,10 +355,10 @@ export const AppShell: React.FC<AppShellProps> = ({
   const navItems = getRoleNavItems();
 
   return (
-    <div className="min-h-screen flex bg-[#E9EEF3] text-[#172B4D]">
+    <div className="min-h-screen flex bg-[#E9EEF3] dark:bg-[#0B1020] text-[#172B4D] dark:text-[#F1F5F9]">
       {/* Desktop Collapsible Left Sidebar */}
       <aside
-        className={`hidden md:flex flex-col justify-between sticky top-0 h-screen overflow-y-auto border-r border-black/5 bg-[#E9EEF3] transition-all shrink-0 ${
+        className={`hidden md:flex flex-col justify-between sticky top-0 h-screen overflow-y-auto border-r border-black/5 dark:border-white/10 bg-[#E9EEF3] dark:bg-[#10172A] transition-all shrink-0 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } p-4`}
         aria-label="Role navigation sidebar"
@@ -257,7 +369,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate(navItems[0].id)}
-                className="text-lg font-extrabold tracking-tight text-[#172B4D] font-display cursor-pointer"
+                className="text-lg font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display cursor-pointer"
               >
                 TeleHealth
               </button>
@@ -296,7 +408,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         </div>
 
         {/* Sign Out Footer */}
-        <div className="pt-4 border-t border-black/5 space-y-3">
+        <div className="pt-4 border-t border-black/5 space-y-2.5">
           <button
             type="button"
             onClick={() => setSignOutConfirmOpen(true)}
@@ -311,26 +423,27 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Main Content Column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navigation Bar */}
-        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 backdrop-blur-xs border-b border-black/5 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 dark:bg-[#0B1020]/95 backdrop-blur-xs border-b border-black/5 dark:border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
               aria-label="Open navigation menu"
-              className="md:hidden neu-btn w-9 h-9 rounded-xl flex items-center justify-center text-[#172B4D]"
+              className="md:hidden neu-btn w-9 h-9 rounded-xl flex items-center justify-center text-[#172B4D] dark:text-[#F1F5F9]"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="text-xs sm:text-sm font-semibold text-[#64748B] truncate">
-              <span className="capitalize font-bold text-[#172B4D]">{currentRole} Workspace</span>
+            <div className="text-xs sm:text-sm font-semibold text-[#64748B] dark:text-[#A7B4CC] truncate">
+              <span className="capitalize font-bold text-[#172B4D] dark:text-[#F1F5F9]">{currentRole} Workspace</span>
               <span className="mx-2">/</span>
-              <span className="text-[#3478F6] font-semibold">
+              <span className="text-[#3478F6] dark:text-[#60A5FA] font-semibold">
                 {navItems.find((i) => i.id === currentScreen)?.label || 'Clinical View'}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <SettingsPopover className="hidden sm:inline-block" />
             {/* Notification Bell with Unread Count */}
             <div className="relative">
               <button
@@ -381,26 +494,8 @@ export const AppShell: React.FC<AppShellProps> = ({
                             if (currentRole === 'patient') onNavigate('patient-notifications');
                             if (currentRole === 'doctor') onNavigate('doctor-notifications');
                           }}
-                          className={`neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40 transition-all ${
-                            !n.read ? 'border-l-4 border-l-[#3478F6]' : 'opacity-80'
-                          }`}
+                          className="neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40"
                         >
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span
-                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                !n.read
-                                  ? 'bg-[#3478F6]/15 text-[#3478F6]'
-                                  : 'bg-[#16865C]/15 text-[#16865C]'
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  !n.read ? 'bg-[#3478F6]' : 'bg-[#16865C]'
-                                }`}
-                              />
-                              {!n.read ? 'Unread Notification' : 'Read Status'}
-                            </span>
-                          </div>
                           <div className="font-bold text-[#172B4D]">{n.title}</div>
                           <p className="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">{n.message}</p>
                         </div>
@@ -428,11 +523,11 @@ export const AppShell: React.FC<AppShellProps> = ({
 
         {/* Mobile Drawer */}
         {mobileDrawerOpen && (
-          <div className="fixed inset-0 z-50 md:hidden bg-[#172B4D]/40 backdrop-blur-xs flex">
-            <div className="w-72 bg-[#E9EEF3] h-full p-5 flex flex-col justify-between">
+          <div className="fixed inset-0 z-50 md:hidden bg-[#172B4D]/40 dark:bg-black/60 backdrop-blur-xs flex">
+            <div className="w-72 bg-[#E9EEF3] dark:bg-[#10172A] h-full p-5 flex flex-col justify-between">
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-extrabold text-[#172B4D]">TeleHealth</span>
+                  <span className="text-lg font-extrabold text-[#172B4D] dark:text-[#F1F5F9]">TeleHealth</span>
                   <button
                     type="button"
                     onClick={() => setMobileDrawerOpen(false)}
@@ -465,6 +560,8 @@ export const AppShell: React.FC<AppShellProps> = ({
               </div>
 
               <div className="space-y-3 pt-4 border-t border-black/5">
+                <DarkModeToggle variant="mobile" />
+                <LanguageSelector variant="mobile" />
                 <NeuButton
                   variant="danger"
                   className="w-full"

@@ -185,6 +185,7 @@ export interface Appointment {
   patientName: string;
   patientEmail: string;
   patientContact: string;
+  patientPhone?: string;
   patientDob: string;
   patientSex: string;
   doctorId: string;
@@ -204,6 +205,13 @@ export interface Appointment {
   currentMedicationsSnapshot: string;
   existingConditionsSnapshot: string;
   status: AppointmentStatus;
+  paymentStatus?: 'Unpaid' | 'Pending Payment' | 'Payment Pending Verification' | 'Paid' | 'Rejected' | 'Expired' | 'Failed';
+  paymentAmountPhp?: number;
+  paymentMethod?: 'GCash' | 'Maya' | 'Credit/Debit Card' | 'PayMongo / Xendit Hosted Checkout' | 'Manual Clinic QR Code';
+  paymentTransactionId?: string;
+  paymentReceiptUrl?: string;
+  paymentSubmittedAt?: string;
+  paymentReservedUntil?: string;
   rejectionReason?: string;
   cancellationReason?: string;
   rescheduleReason?: string;
@@ -311,6 +319,12 @@ export interface SystemSettingsConfig {
   allowPatientReschedule: boolean;
   requireEmailVerification: boolean;
   inAppNotificationsEnabled: boolean;
-  emailGatewayStatus: 'Not Configured (Demo Boundary)' | 'Connected';
-  djangoBackendStatus: 'Demo Sandbox (Ready for REST Integration)' | 'Connected';
+  emailGatewayStatus: 'Not Configured (Demo Boundary)' | 'Connected' | 'Connected (Gmail API)';
+  djangoBackendStatus: 'Demo Sandbox (Ready for REST Integration)' | 'Connected' | 'Connected (Cloud Firestore Database)';
+  clinicQrCodeUrl?: string;
+  clinicQrAccountName?: string;
+  clinicQrAccountNumber?: string;
+  clinicQrBankName?: string;
+  consultationFeePhp?: number;
 }
+

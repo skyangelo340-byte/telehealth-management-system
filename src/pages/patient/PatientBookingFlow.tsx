@@ -22,6 +22,7 @@ import {
   DoctorProfile,
   DoctorSchedule,
   Appointment,
+  SystemSettingsConfig,
   ScreenId,
 } from '../../types';
 import {
@@ -30,7 +31,7 @@ import {
   computeDoctorAvailabilityForDate,
   formatReadableDate,
 } from '../../services/mockData';
-import { validateSlotCanBeBooked } from '../../services/api';
+import { validateSlotCanBeBooked, generateAppointmentReference } from '../../services/api';
 import {
   NeuCard,
   NeuButton,
@@ -63,6 +64,7 @@ export interface BookingDraftState {
   timeLabel: string;
   reasonForVisit: string;
   agreedToTerms: boolean;
+  paymentMethod?: 'GCash' | 'Maya' | 'Credit/Debit Card';
 }
 
 interface PatientBookingFlowProps {
@@ -76,11 +78,12 @@ interface PatientBookingFlowProps {
   appointments: Appointment[];
   draft: BookingDraftState;
   setDraft: React.Dispatch<React.SetStateAction<BookingDraftState>>;
-  onSubmitBooking: () => Promise<{ success: boolean; appointment?: Appointment; error?: string }>;
+  onSubmitBooking: (receiptBase64?: string, receiptSubmittedAt?: string) => Promise<{ success: boolean; appointment?: Appointment; error?: string }>;
   lastBookedAppointment: Appointment | null;
   onOpenPrivacyModal: () => void;
   onOpenTermsModal: () => void;
   onViewAppointmentDetails: (apt: Appointment) => void;
+  systemSettings?: SystemSettingsConfig;
 }
 
 export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
@@ -98,6 +101,7 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
   onOpenPrivacyModal,
   onOpenTermsModal,
   onViewAppointmentDetails,
+  systemSettings,
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,6 +110,48 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
   const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
   const [hoveredDeptId, setHoveredDeptId] = useState<string | null>(null);
   const deptDropdownRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Manual Receipt Screenshot Upload State
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const receiptInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setReceiptError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setReceiptError('Invalid file format. Please select a PNG, JPEG, or WebP screenshot image. / Hindi suportado ang format ng file.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setReceiptError('File size exceeds the 5 MB limit. Please select a smaller screenshot. / Ang laki ng file ay lumampas sa 5 MB.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReceiptFile(file);
+      setReceiptPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveReceipt = () => {
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setReceiptError(null);
+    if (receiptInputRef.current) {
+      receiptInputRef.current.value = '';
+    }
+  };
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -398,9 +444,21 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
   };
 
   const handleFinalConfirmBooking = async () => {
-    setIsSubmitting(true);
     setConflictBanner(null);
-    const result = await onSubmitBooking();
+    setReceiptError(null);
+
+    if (!systemSettings?.clinicQrCodeUrl) {
+      setReceiptError('Clinic receiving QR code is not configured yet. The administrator must upload the receiving QR code image in Admin Settings before payments can be processed. / Hindi pa naka-setup ang QR code ng klinik.');
+      return;
+    }
+
+    if (!receiptPreview) {
+      setReceiptError('Please upload a clear screenshot of your transfer receipt before submitting. / Mangyaring i-upload ang screenshot ng resibo bago isumite.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await onSubmitBooking(receiptPreview, new Date().toISOString());
     setIsSubmitting(false);
 
     if (!result.success) {
@@ -414,109 +472,279 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
     }
   };
 
-  // SCREEN 10: APPOINTMENT REVIEW
+  // SCREEN 10: APPOINTMENT REVIEW & MANUAL QR PAYMENT STEP
   if (currentScreen === 'appointment-review') {
+    const previewReferenceNumber = generateAppointmentReference(appointments);
+    const consultationFee = systemSettings?.consultationFeePhp ?? 10;
+    const feeFormatted = `₱${consultationFee.toFixed(2)} PHP`;
+
     return (
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold text-[#3478F6]">Step 9–11 of 12 · Pre-Submission Verification</div>
-            <h1 className="text-2xl font-bold text-[#172B4D]">Review Appointment Summary</h1>
+            <div className="text-xs font-semibold text-[#3478F6]">Step 6 of 6 · Manual QR Payment & Receipt Upload / Bayad at Beripikasyon</div>
+            <h1 className="text-2xl font-bold text-[#172B4D]">Manual QR Payment & Appointment Review</h1>
             <p className="text-xs text-[#64748B]">
-              Verify your clinical intake details and 1-hour slot reservation before submitting to the server.
+              Review your clinical details, scan the clinic receiving QR code to transfer exact consultation fee, and upload your receipt screenshot. / Suriin ang mga detalye at mag-upload ng resibo ng bayad.
             </p>
           </div>
           <NeuButton
             onClick={() => onNavigate('book-appointment')}
             icon={<ArrowLeft className="w-4 h-4" />}
           >
-            Edit Information
+            Edit Information / Baguhin
           </NeuButton>
         </div>
 
+        {/* Main Review Card */}
         <NeuCard size="lg" className="space-y-6">
+          {/* Patient Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-5 border-b border-black/5">
             <div>
-              <div className="text-xs text-[#64748B]">Patient Name</div>
+              <div className="text-xs text-[#64748B]">Patient Name / Pangalan</div>
               <div className="text-sm font-bold text-[#172B4D]">{draft.fullName}</div>
               <div className="text-xs text-[#64748B] mt-0.5">
                 DOB: <span className="font-mono-tabular">{draft.dateOfBirth}</span> ({calculatedAge ?? '—'} yrs) · {draft.sex}
               </div>
             </div>
             <div>
-              <div className="text-xs text-[#64748B]">Verified Contact & Email</div>
+              <div className="text-xs text-[#64748B]">Verified Contact & Email / Kontak</div>
               <div className="text-sm font-bold text-[#172B4D] font-mono-tabular">{draft.contactNumber}</div>
               <div className="text-xs text-[#64748B] mt-0.5">{draft.email}</div>
             </div>
           </div>
 
+          {/* Doctor & Schedule Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-5 border-b border-black/5">
             <div>
-              <div className="text-xs text-[#64748B]">Department & Attending Physician</div>
+              <div className="text-xs text-[#64748B]">Department & Attending Physician / Doktor</div>
               <div className="text-sm font-bold text-[#172B4D]">{selectedDoctor?.fullName}</div>
               <div className="text-xs text-[#3478F6] font-semibold mt-0.5">{selectedDepartment?.name}</div>
             </div>
             <div>
-              <div className="text-xs text-[#64748B]">Reserved 1-Hour Slot</div>
+              <div className="text-xs text-[#64748B]">Requested 1-Hour Slot / Nakatalagang Oras</div>
               <div className="text-sm font-bold text-[#172B4D]">{formatReadableDate(draft.date)}</div>
               <div className="text-xs font-mono-tabular font-semibold text-[#16865C] mt-0.5">
-                {draft.timeLabel} (Exclusive 60-Min Window)
+                {draft.timeLabel} (60-Min Window)
               </div>
             </div>
           </div>
 
+          {/* Service & Booking Mode */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-5 border-b border-black/5">
             <div>
-              <div className="text-xs text-[#64748B]">Appointment Service Type</div>
+              <div className="text-xs text-[#64748B]">Appointment Service Type / Uri ng Serbisyo</div>
               <div className="text-sm font-bold text-[#172B4D]">{selectedType?.name}</div>
             </div>
             <div>
-              <div className="text-xs text-[#64748B]">Consultation Mode</div>
+              <div className="text-xs text-[#64748B]">Consultation Mode / Paraan</div>
               <div className="text-sm font-bold text-[#3478F6]">
                 {draft.consultationMode || 'Online Appointment'}
               </div>
             </div>
             <div>
-              <div className="text-xs text-[#64748B]">Applicable Initial Booking Status</div>
+              <div className="text-xs text-[#64748B]">Initial Booking Status / Estado</div>
               <div className="mt-1">
-                <StatusIndicator status="Pending" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span>Pending Admin Verification</span>
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="space-y-4 text-xs">
-            <div className="pb-4 border-b border-black/5">
-              <span className="font-semibold text-[#64748B] block">Reason for Visit / Chief Complaint</span>
-              <p className="mt-1 text-sm font-medium text-[#172B4D]">{draft.reasonForVisit}</p>
+          {/* Consultation Fee & Unique Reference Breakdown */}
+          <div className="space-y-3 pb-5 border-b border-black/5">
+            <div className="text-xs font-extrabold uppercase tracking-wider text-[#172B4D]">
+              Consultation Fee Breakdown & Booking Reference / Detalye ng Bayad at Reperensya
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <span className="font-semibold text-[#64748B] block">Known Allergies</span>
-                <span className="mt-0.5 block font-bold text-[#172B4D]">{draft.knownAllergies || 'None reported'}</span>
+            <div className="neu-inset rounded-2xl p-4 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between text-[#64748B]">
+                <span>Authoritative Consultation Fee / Bayad sa Konsultasyon:</span>
+                <span className="font-bold text-[#172B4D]">{feeFormatted}</span>
               </div>
-              <div>
-                <span className="font-semibold text-[#64748B] block">Current Medications</span>
-                <span className="mt-0.5 block font-bold text-[#172B4D]">{draft.currentMedications || 'None reported'}</span>
+              <div className="flex items-center justify-between text-[#64748B]">
+                <span>Payment Verification Workflow / Paraan ng Pagpapatunay:</span>
+                <span className="font-semibold text-[#3478F6]">
+                  Manual QR Transfer + Admin Receipt Verification
+                </span>
               </div>
-              <div>
-                <span className="font-semibold text-[#64748B] block">Existing Conditions</span>
-                <span className="mt-0.5 block font-bold text-[#172B4D]">{draft.existingMedicalConditions || 'None reported'}</span>
+              <div className="flex items-center justify-between text-[#64748B]">
+                <span>Unique Booking Reference / Reperensya ng Booking:</span>
+                <span className="font-mono-tabular font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
+                  {previewReferenceNumber}
+                </span>
+              </div>
+              <div className="pt-2.5 border-t border-black/10 flex items-center justify-between font-bold text-xs text-[#172B4D]">
+                <span>Total Amount to Transfer / Kabuuang Ico-transfer:</span>
+                <span className="font-extrabold text-base text-[#3478F6]">{feeFormatted}</span>
               </div>
             </div>
           </div>
 
+          {/* Clinic Receiving QR & Patient Receipt Screenshot Panel */}
+          <div className="space-y-4 pb-5 border-b border-black/5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-[#172B4D] block">
+                Clinic Receiving QR Code & Receipt Upload / QR ng Klinik at Pag-upload ng Resibo
+              </label>
+              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${systemSettings?.clinicQrCodeUrl ? 'text-[#16865C] bg-[#16865C]/10' : 'text-amber-700 dark:text-amber-300 bg-amber-500/10'}`}>
+                {systemSettings?.clinicQrCodeUrl ? '✓ Receiving QR Active' : '⚠️ Setup Required'}
+              </span>
+            </div>
+
+            {systemSettings?.clinicQrCodeUrl ? (
+              <div className="neu-raised rounded-2xl p-5 border border-[#3478F6]/20 space-y-4">
+                <div className="flex flex-col md:flex-row items-center gap-5">
+                  <div className="w-48 h-48 bg-white p-2.5 rounded-2xl border border-black/10 shadow-sm shrink-0 flex items-center justify-center">
+                    <img
+                      src={systemSettings.clinicQrCodeUrl}
+                      alt="Clinic Receiving QR Code"
+                      className="w-full h-full object-contain rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2 text-xs text-[#64748B] flex-1">
+                    <div className="font-bold text-sm text-[#172B4D] flex items-center gap-1.5">
+                      <span>📲 {systemSettings.clinicQrBankName || 'GCash / Maya / Bank QR Ph'}</span>
+                    </div>
+                    <div className="neu-inset-sm rounded-xl p-3 space-y-1.5 text-xs">
+                      <div>Account Name: <strong className="text-[#172B4D]">{systemSettings.clinicQrAccountName || 'TeleHealth Medical Center'}</strong></div>
+                      <div>Account Number: <strong className="font-mono text-[#3478F6]">{systemSettings.clinicQrAccountNumber || '0917-888-9999'}</strong></div>
+                      <div>Required Fee / Bayad: <strong className="font-extrabold text-[#16865C]">{feeFormatted}</strong></div>
+                      <div>Include Reference Note: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{previewReferenceNumber}</strong></div>
+                    </div>
+                    <ol className="list-decimal pl-4 space-y-1 text-[11px] text-[#64748B]">
+                      <li>Open GCash, Maya, or any e-wallet/bank app and scan the clinic QR code. / I-scan ang QR ng klinik.</li>
+                      <li>Transfer the exact consultation fee: <strong>{feeFormatted}</strong>. / I-transfer ang eksaktong halaga.</li>
+                      <li>Include reference <strong>{previewReferenceNumber}</strong> in the notes/message field. / Ilagay ang numero ng reperensya.</li>
+                      <li>Save a screenshot of the payment receipt and upload it below. / I-save at i-upload ang screenshot ng resibo.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="neu-raised rounded-2xl p-5 border border-amber-500/30 bg-amber-500/10 space-y-2 text-xs">
+                <div className="font-bold text-amber-800 dark:text-amber-300 text-sm flex items-center gap-2">
+                  <span>⚠️ Clinic Receiving QR Code Not Configured / Hindi Pa Naka-setup ang QR Code ng Klinik</span>
+                </div>
+                <p className="text-[#64748B] leading-relaxed">
+                  Online payment setup is currently pending clinic administrator configuration. The administrator must configure the receiving QR code image in <strong>Admin Portal → Clinic QR Setup</strong>. Payment submission remains disabled until configured.
+                </p>
+              </div>
+            )}
+
+            {/* Hidden file input with ref */}
+            <input
+              ref={receiptInputRef}
+              type="file"
+              accept="image/png, image/jpeg, image/webp"
+              className="hidden"
+              onChange={handleReceiptFileChange}
+            />
+
+            {/* Receipt Upload Input & Preview */}
+            <div className="neu-inset rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[#172B4D] flex items-center gap-1.5">
+                  <span>📄 Upload Payment Receipt Screenshot / I-upload ang Screenshot ng Resibo</span>
+                  <span className="text-[#C63D4D] font-bold">*</span>
+                </label>
+                {receiptFile && (
+                  <span className="text-[11px] font-mono font-semibold text-[#16865C]">
+                    {(receiptFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </span>
+                )}
+              </div>
+
+              {receiptError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 font-semibold">
+                  {receiptError}
+                </div>
+              )}
+
+              {receiptPreview ? (
+                <div className="space-y-3">
+                  <div className="relative rounded-2xl overflow-hidden border border-black/10 bg-black/5 max-h-72 flex items-center justify-center p-2">
+                    <img
+                      src={receiptPreview}
+                      alt="Uploaded Payment Receipt Screenshot"
+                      className="max-h-64 object-contain rounded-xl shadow-md"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="text-[#16865C] font-bold flex items-center gap-1">
+                      ✓ Screenshot Ready: {receiptFile?.name || 'receipt_screenshot.png'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <NeuButton
+                        size="sm"
+                        type="button"
+                        onClick={() => receiptInputRef.current?.click()}
+                      >
+                        Replace Screenshot / Palitan
+                      </NeuButton>
+                      <NeuButton size="sm" variant="danger" onClick={handleRemoveReceipt}>
+                        Remove / Alisin
+                      </NeuButton>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => receiptInputRef.current?.click()}
+                  className="neu-raised rounded-2xl p-6 border-2 border-dashed border-[#3478F6]/40 hover:border-[#3478F6] cursor-pointer flex flex-col items-center justify-center gap-2 text-center transition-all bg-white/40 dark:bg-slate-900/40"
+                >
+                  <div className="w-12 h-12 rounded-2xl neu-inset flex items-center justify-center text-2xl text-[#3478F6]">
+                    📤
+                  </div>
+                  <div className="text-xs font-bold text-[#172B4D]">
+                    Click to Select Receipt Screenshot / I-click para Pumili ng Resibo
+                  </div>
+                  <div className="text-[11px] text-[#64748B]">
+                    Supported Formats: PNG, JPEG, WebP (Max size: 5 MB)
+                  </div>
+                  <NeuButton
+                    size="sm"
+                    variant="primary"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      receiptInputRef.current?.click();
+                    }}
+                  >
+                    Select Receipt Screenshot / Pumili ng Resibo
+                  </NeuButton>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Privacy & Anti-Fraud Safeguard Notice */}
+          <div className="neu-inset-sm rounded-2xl p-3.5 bg-blue-500/10 border border-blue-500/20 text-xs text-[#172B4D] space-y-1">
+            <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-[#3478F6]" />
+              <span>🔒 Verification Safeguard & Privacy Notice / Paalala sa Pagpapatunay</span>
+            </div>
+            <p className="text-[11px] text-[#64748B] dark:text-[#A7B4CC] leading-relaxed">
+              Uploading a receipt screenshot and submitting saves your appointment with status <strong>Payment Pending Verification</strong>. Submitting will <strong>NEVER</strong> automatically confirm your payment or appointment. An authorized clinic administrator must inspect and verify your receipt before your appointment is routed to the attending physician.
+            </p>
+          </div>
+
+          {/* Actions */}
           <div className="pt-4 border-t border-black/5 flex flex-wrap items-center justify-between gap-3">
             <NeuButton onClick={() => onNavigate('book-appointment')}>
-              ← Back to Form & Calendar
+              ← Back to Form & Calendar / Bumalik
             </NeuButton>
             <NeuButton
               variant="primary"
               size="lg"
               loading={isSubmitting}
+              disabled={!systemSettings?.clinicQrCodeUrl || !receiptPreview}
               onClick={handleFinalConfirmBooking}
               icon={<CheckCircle2 className="w-4 h-4" />}
             >
-              Submit Booking Request
+              Submit Receipt for Verification (Pending)
             </NeuButton>
           </div>
         </NeuCard>
@@ -527,6 +755,8 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
   // SCREEN 11: BOOKING CONFIRMATION
   if (currentScreen === 'booking-confirmation') {
     const apt = lastBookedAppointment;
+    const feeFormatted = systemSettings?.consultationFeePhp ? `₱${systemSettings.consultationFeePhp.toFixed(2)} PHP` : '₱10.00 PHP';
+
     return (
       <div className="max-w-2xl mx-auto py-4 space-y-6">
         <NeuCard size="lg" className="text-center space-y-5">
@@ -534,10 +764,10 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
             <CheckCircle2 className="w-8 h-8" />
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-semibold text-[#16865C]">Step 12 of 12 · Booking Operation Verified</div>
-            <h1 className="text-2xl font-bold text-[#172B4D]">Appointment Request Submitted</h1>
+            <div className="text-xs font-semibold text-[#16865C]">Booking Request Submitted / Naisumite Na</div>
+            <h1 className="text-2xl font-bold text-[#172B4D]">Appointment Request Received</h1>
             <p className="text-xs text-[#64748B] max-w-md mx-auto">
-              Your 1-hour slot has been reserved in the demonstration sandbox and assigned reference number{' '}
+              Your consultation request has been submitted and assigned reference number{' '}
               <strong className="font-mono-tabular text-[#172B4D]">{apt?.referenceNumber || 'TH-2026-8501'}</strong>.
             </p>
           </div>
@@ -545,52 +775,52 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
           {apt && (
             <div className="neu-inset rounded-2xl p-5 text-left grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <div className="text-[#64748B]">Reference Number</div>
+                <div className="text-[#64748B]">Reference Number / Reperensya</div>
                 <div className="text-sm font-bold font-mono-tabular text-[#3478F6]">{apt.referenceNumber}</div>
               </div>
               <div>
-                <div className="text-[#64748B]">Current Status</div>
+                <div className="text-[#64748B]">Booking Status / Estado</div>
                 <div className="mt-0.5">
                   <StatusIndicator status={apt.status} />
                 </div>
               </div>
               <div>
-                <div className="text-[#64748B]">Doctor & Department</div>
+                <div className="text-[#64748B]">Payment Status / Estado ng Bayad</div>
+                <div className="font-bold text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1">
+                  <span>{apt.paymentStatus || 'Payment Pending Verification'}</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-[#64748B]">Consultation Fee / Bayad sa Konsultasyon</div>
+                <div className="font-bold text-[#172B4D]">{feeFormatted}</div>
+              </div>
+              <div>
+                <div className="text-[#64748B]">Doctor & Department / Doktor at Departamento</div>
                 <div className="font-bold text-[#172B4D]">{apt.doctorName}</div>
                 <div className="text-[#64748B]">{apt.departmentName}</div>
               </div>
               <div>
-                <div className="text-[#64748B]">Scheduled Date & 1-Hour Slot</div>
+                <div className="text-[#64748B]">Scheduled Date & Slot / Petsa at Oras</div>
                 <div className="font-bold text-[#172B4D]">{formatReadableDate(apt.date)}</div>
                 <div className="font-mono-tabular font-semibold text-[#16865C]">{apt.timeLabel}</div>
               </div>
-              <div>
-                <div className="text-[#64748B]">Appointment Mode</div>
-                <div className="font-bold text-[#3478F6]">{apt.consultationMode || 'Online Appointment'}</div>
-              </div>
-              <div>
-                <div className="text-[#64748B]">Consultation Type</div>
-                <div className="font-bold text-[#172B4D]">{apt.appointmentTypeName}</div>
-              </div>
-              {(apt.consultationMode || 'Online Appointment') === 'Online Appointment' && (
-                <div className="sm:col-span-2 pt-2 border-t border-black/5">
-                  <div className="text-[#64748B]">Online Video Consultation (Google Meet)</div>
-                  <div className="text-[#172B4D] font-medium mt-0.5">
-                    Your Google Meet room link will be sent to your notifications and Appointment Details page as soon as {apt.doctorName} confirms your request.
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          <div className="neu-raised-sm rounded-xl p-4 text-left text-xs text-[#64748B] space-y-1">
-            <div className="font-bold text-[#172B4D]">Next Steps & Preparation</div>
-            <p>
-              1. Your attending doctor will review and confirm the request. You will receive an in-app notification in your Notification Center.
+          {/* Admin Verification Queue Instructions Notice */}
+          <div className="neu-raised-sm rounded-xl p-4 text-left text-xs text-[#64748B] space-y-2">
+            <div className="font-bold text-[#172B4D] flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#3478F6] shrink-0" />
+              <span>Manual QR Receipt Verification Process / Proseso ng Beripikasyon</span>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              Your uploaded payment receipt screenshot is now queued for verification by the clinic administrator.
             </p>
-            <p>
-              2. {selectedType?.preparationInstructions || 'Please arrive or connect 10 minutes before your scheduled 1-hour slot.'}
-            </p>
+            <ol className="list-decimal pl-4 space-y-1 text-[11px]">
+              <li>The administrator will cross-reference your uploaded screenshot with the clinic's receiving account.</li>
+              <li>Upon approval, your payment status will change to <strong>Paid</strong> and your appointment status will be updated to <strong>Confirmed</strong>.</li>
+              <li>If the screenshot is unclear or incomplete, the administrator may request a resubmission.</li>
+            </ol>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

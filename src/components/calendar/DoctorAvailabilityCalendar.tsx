@@ -209,14 +209,14 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
       {showFilters && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="cal-dept-filter" className="text-xs font-semibold text-[#101B45] px-1">
+            <label htmlFor="cal-dept-filter" className="text-xs font-semibold text-[#101B45] dark:text-[#F0F5FF] px-1">
               Filter by Department
             </label>
             <select
               id="cal-dept-filter"
               value={selectedDepartmentId}
               onChange={(e) => onSelectDepartment(e.target.value)}
-              className="neu-inset rounded-[18px] px-4 py-2.5 text-xs sm:text-sm text-[#101B45]"
+              className="neu-inset rounded-[18px] px-4 py-2.5 text-xs sm:text-sm text-[#101B45] dark:text-[#F0F5FF]"
             >
               <option value="">All Clinical Departments</option>
               {departments.map((d) => (
@@ -228,14 +228,14 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="cal-doc-filter" className="text-xs font-semibold text-[#101B45] px-1">
+            <label htmlFor="cal-doc-filter" className="text-xs font-semibold text-[#101B45] dark:text-[#F0F5FF] px-1">
               Attending Doctor
             </label>
             <select
               id="cal-doc-filter"
               value={activeDoctor?.id || ''}
               onChange={(e) => onSelectDoctor(e.target.value)}
-              className="neu-inset rounded-[18px] px-4 py-2.5 text-xs sm:text-sm text-[#101B45]"
+              className="neu-inset rounded-[18px] px-4 py-2.5 text-xs sm:text-sm text-[#101B45] dark:text-[#F0F5FF]"
             >
               {filteredDoctors.map((doc) => (
                 <option key={doc.id} value={doc.id}>
@@ -251,12 +251,12 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
       {activeDoctor && (
         <div className="neu-inset rounded-[18px] px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div>
-            <span className="font-semibold text-[#101B45]">{activeDoctor.fullName}</span>
-            <span className="mx-1.5 text-[#68789D]">·</span>
-            <span className="text-[#68789D]">{activeDoctor.departmentName}</span>
+            <span className="font-semibold text-[#101B45] dark:text-[#F0F5FF]">{activeDoctor.fullName}</span>
+            <span className="mx-1.5 text-[#68789D] dark:text-[#8FA1C7]">·</span>
+            <span className="text-[#68789D] dark:text-[#8FA1C7]">{activeDoctor.departmentName}</span>
           </div>
-          <div className="text-[#68789D] font-mono-tabular">
-            Working Days: <span className="text-[#2674FF] font-semibold">{activeDoctor.workingDays.join(', ')}</span>
+          <div className="text-[#68789D] dark:text-[#8FA1C7] font-mono-tabular">
+            Working Days: <span className="text-[#2674FF] dark:text-[#60A5FA] font-semibold">{activeDoctor.workingDays.join(', ')}</span>
           </div>
         </div>
       )}
@@ -344,22 +344,22 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                         status === 'Blocked / Leave' ||
                         status === 'Fully Booked';
 
-                      let cellClasses = 'neu-btn text-[#101B45] cursor-pointer';
+                      let cellClasses = 'neu-btn text-[#101B45] dark:text-[#F0F5FF] cursor-pointer';
                       let statusLabel = `${openSlotsCount} open`;
 
                       if (isSelected) {
                         cellClasses = 'neu-btn-primary text-white font-bold ring-2 ring-[#66C8FF]/50 cursor-pointer';
                       } else if (status === 'Past') {
-                        cellClasses = 'neu-inset-sm text-[#68789D]/45 opacity-55 cursor-not-allowed pointer-events-none';
+                        cellClasses = 'neu-inset-sm text-[#68789D]/45 dark:text-[#8FA1C7]/40 opacity-55 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Past';
                       } else if (status === 'Blocked / Leave') {
-                        cellClasses = 'neu-inset-sm text-[#D63649] opacity-75 cursor-not-allowed pointer-events-none';
+                        cellClasses = 'neu-inset-sm text-[#D63649] dark:text-[#F87171] opacity-80 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Leave';
                       } else if (status === 'Doctor Unavailable') {
-                        cellClasses = 'neu-inset-sm text-[#68789D]/60 opacity-70 cursor-not-allowed pointer-events-none';
+                        cellClasses = 'neu-inset-sm text-[#68789D]/60 dark:text-[#8FA1C7]/50 opacity-70 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Off';
                       } else if (status === 'Fully Booked') {
-                        cellClasses = 'neu-inset-sm text-[#C87A14] opacity-80 cursor-not-allowed pointer-events-none';
+                        cellClasses = 'neu-inset-sm text-[#C87A14] dark:text-[#FBBF24] opacity-85 cursor-not-allowed pointer-events-none';
                         statusLabel = 'Full';
                       }
 
@@ -379,7 +379,7 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                           <span className="text-xs sm:text-sm font-mono-tabular font-semibold leading-none">
                             {cell.dayNum}
                             {isToday && !isSelected && (
-                              <span className="ml-0.5 text-[#2674FF] font-bold">•</span>
+                              <span className="ml-0.5 text-[#2674FF] dark:text-[#60A5FA] font-bold">•</span>
                             )}
                           </span>
                           <span
@@ -387,7 +387,7 @@ export const DoctorAvailabilityCalendar: React.FC<DoctorAvailabilityCalendarProp
                               isSelected
                                 ? 'text-white/95'
                                 : status === 'Available'
-                                  ? 'text-[#12805C]'
+                                  ? 'text-[#12805C] dark:text-[#34D399]'
                                   : ''
                             }`}
                           >

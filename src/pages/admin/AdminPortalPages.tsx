@@ -19,11 +19,14 @@ import {
   Code2,
   Copy,
   Mail,
+  Languages,
+  QrCode,
 } from 'lucide-react';
 import {
   connectOfficialOtpSender,
   getOfficialOtpSenderStatus,
 } from '../../services/googleAuth';
+import { useLanguage } from '../../context/LanguageContext';
 import { PrescriptionPdfModal } from '../../components/ui/PrescriptionPdfModal';
 import { GOOGLE_COLAB_NOTEBOOK_PYTHON } from '../../services/symptomTriageService';
 import {
@@ -77,6 +80,8 @@ interface AdminPortalPagesProps {
   onApproveScheduleBlock: (doctorId: string, blockId: string) => void;
   onRejectScheduleBlock: (doctorId: string, blockId: string, reason?: string) => void;
   onConfirmAppointment: (id: string) => void;
+  onConfirmPayment?: (id: string) => void;
+  onRejectPayment?: (id: string, reason: string) => void;
   onOpenCancelModal: (apt: Appointment) => void;
   onOpenRescheduleModal: (apt: Appointment) => void;
   auditLogs: AuditLogEntry[];
@@ -103,16 +108,43 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
   onApproveScheduleBlock,
   onRejectScheduleBlock,
   onConfirmAppointment,
+  onConfirmPayment,
+  onRejectPayment,
   onOpenCancelModal,
   onOpenRescheduleModal,
   auditLogs,
   systemSettings,
   onUpdateSystemSettings,
 }) => {
+  const { language, setLanguage, isTagalog } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedPatient, setSelectedPatient] = useState<PatientProfile | null>(patients[0] || null);
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorProfile | null>(doctors[0] || null);
+
+  // Payment Verification Modal State
+  const [expandedReceiptModalApt, setExpandedReceiptModalApt] = useState<Appointment | null>(null);
+  const [rejectPaymentModalApt, setRejectPaymentModalApt] = useState<Appointment | null>(null);
+  const [paymentRejectionReasonInput, setPaymentRejectionReasonInput] = useState('');
+
+  // Clinic QR Setup State
+  const [qrAccountName, setQrAccountName] = useState(systemSettings.clinicQrAccountName || 'TeleHealth Medical Center');
+  const [qrAccountNumber, setQrAccountNumber] = useState(systemSettings.clinicQrAccountNumber || '0917-888-9999');
+  const [qrBankName, setQrBankName] = useState(systemSettings.clinicQrBankName || 'GCash / Maya / Bank QR Ph');
+  const [qrFeePhp, setQrFeePhp] = useState(systemSettings.consultationFeePhp || 10);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState(systemSettings.clinicQrCodeUrl || '/assets/aistudio/image_3826cde4.png');
+  const [qrFileError, setQrFileError] = useState<string | null>(null);
+  const adminQrFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    if (systemSettings) {
+      setQrAccountName(systemSettings.clinicQrAccountName || 'TeleHealth Medical Center');
+      setQrAccountNumber(systemSettings.clinicQrAccountNumber || '0917-888-9999');
+      setQrBankName(systemSettings.clinicQrBankName || 'GCash / Maya / Bank QR Ph');
+      setQrFeePhp(systemSettings.consultationFeePhp || 10);
+      setQrCodeDataUrl(systemSettings.clinicQrCodeUrl || '/assets/aistudio/image_3826cde4.png');
+    }
+  }, [systemSettings]);
 
   // New department / appointment type state
   const [newDeptName, setNewDeptName] = useState('');
@@ -1349,8 +1381,15 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
     currentScreen === 'appointment-management' ||
     currentScreen === 'calendar-scheduling-management'
   ) {
+    const pendingReceiptSubmissions = appointments.filter(
+      (a) => a.paymentStatus === 'Payment Pending Verification'
+    );
+
     const filteredApts = appointments.filter((a) => {
-      const matchSt = statusFilter === 'ALL' || a.status === statusFilter;
+      const matchSt =
+        statusFilter === 'ALL' ||
+        a.status === statusFilter ||
+        a.paymentStatus === statusFilter;
       const q = searchQuery.toLowerCase().trim();
       const matchQ =
         !q ||
@@ -1371,6 +1410,11 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
               Monitor, confirm, reschedule, or cancel clinic appointments across all departments.
             </p>
           </div>
+          {pendingReceiptSubmissions.length > 0 && (
+            <div className="neu-raised rounded-xl px-3.5 py-1.5 bg-[#3478F6]/10 border border-[#3478F6]/30 text-xs font-bold text-[#3478F6] flex items-center gap-2">
+              <span>💳 {pendingReceiptSubmissions.length} Payment Receipt(s) Pending Admin Verification</span>
+            </div>
+          )}
         </div>
 
         {adminToast && (
@@ -1380,6 +1424,117 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
               ✕
             </button>
           </div>
+        )}
+
+        {/* PENDING PAYMENT VERIFICATION PANEL (Admin Actions) */}
+        {pendingReceiptSubmissions.length > 0 && (
+          <NeuCard className="space-y-4 border-2 border-[#3478F6]/30 bg-[#3478F6]/5">
+            <div className="flex items-center justify-between border-b border-black/5 pb-3">
+              <div>
+                <div className="text-xs font-extrabold uppercase tracking-wider text-[#3478F6]">
+                  Action Required · Payment Verification Queue
+                </div>
+                <h2 className="text-base font-bold text-[#172B4D]">
+                  Pending Payment Receipt Submissions ({pendingReceiptSubmissions.length})
+                </h2>
+                <p className="text-xs text-[#64748B]">
+                  Verify patient transfer screenshot, reference number, and amount before confirming appointment.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {pendingReceiptSubmissions.map((apt) => (
+                <div key={apt.id} className="neu-raised rounded-2xl p-4 bg-white/70 dark:bg-slate-900/70 border border-black/10 space-y-3">
+                  <div className="flex items-start justify-between gap-2 text-xs">
+                    <div>
+                      <div className="font-mono-tabular font-bold text-[#3478F6] text-sm">
+                        {apt.referenceNumber}
+                      </div>
+                      <div className="font-bold text-[#172B4D] mt-0.5">{apt.patientName}</div>
+                      <div className="text-[11px] text-[#64748B]">{apt.patientEmail} · {apt.patientContact}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
+                        ₱{apt.paymentAmountPhp || 10}.00 PHP
+                      </div>
+                      <div className="text-[10px] font-mono text-[#64748B]">
+                        Submitted: {apt.paymentSubmittedAt ? new Date(apt.paymentSubmittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-[#64748B] pt-2 border-t border-black/5 grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="text-[10px] text-[#64748B]">Physician & Dept</div>
+                      <div className="font-semibold text-[#172B4D]">{apt.doctorName}</div>
+                      <div className="text-[10px] text-[#64748B]">{apt.departmentName}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[#64748B]">Requested Slot</div>
+                      <div className="font-semibold text-[#172B4D]">{formatReadableDate(apt.date)}</div>
+                      <div className="text-[10px] font-semibold text-[#16865C]">{apt.timeLabel}</div>
+                    </div>
+                  </div>
+
+                  {/* Receipt Thumbnail */}
+                  {apt.paymentReceiptUrl ? (
+                    <div className="pt-2">
+                      <div className="text-[11px] font-bold text-[#172B4D] mb-1">Receipt Screenshot:</div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedReceiptModalApt(apt)}
+                          className="w-24 h-24 rounded-xl overflow-hidden border border-black/10 bg-black/5 hover:opacity-90 cursor-pointer shrink-0"
+                        >
+                          <img
+                            src={apt.paymentReceiptUrl}
+                            alt="Receipt Screenshot"
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                        <div className="space-y-1 text-xs">
+                          <NeuButton
+                            size="sm"
+                            onClick={() => setExpandedReceiptModalApt(apt)}
+                            icon={<Eye className="w-3.5 h-3.5" />}
+                          >
+                            Inspect Receipt
+                          </NeuButton>
+                          <div className="text-[10px] text-[#64748B]">Click to zoom full screenshot</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-600 font-medium">No receipt image attached</div>
+                  )}
+
+                  <div className="pt-3 border-t border-black/5 flex items-center justify-end gap-2">
+                    <NeuButton
+                      size="sm"
+                      variant="danger"
+                      onClick={() => {
+                        setRejectPaymentModalApt(apt);
+                        setPaymentRejectionReasonInput('Receipt screenshot unreadable or incomplete. Please resubmit a clear screenshot.');
+                      }}
+                    >
+                      Reject / Request New Receipt
+                    </NeuButton>
+                    <NeuButton
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        onConfirmPayment?.(apt.id);
+                        triggerToast(`Verified payment for ${apt.referenceNumber} (${apt.patientName}). Status set to PAID & CONFIRMED.`);
+                      }}
+                    >
+                      ✓ Confirm Payment
+                    </NeuButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </NeuCard>
         )}
 
         <NeuCard className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
@@ -1401,6 +1556,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
             className="neu-inset rounded-xl px-3.5 py-2 text-xs font-semibold text-[#172B4D] bg-[#E9EEF3]"
           >
             <option value="ALL">All Statuses</option>
+            <option value="Payment Pending Verification">Payment Pending Verification ({pendingReceiptSubmissions.length})</option>
             <option value="Pending">Pending</option>
             <option value="Confirmed">Confirmed</option>
             <option value="Reschedule Requested">Reschedule Requested</option>
@@ -1488,6 +1644,107 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
             </tbody>
           </table>
         </NeuCard>
+
+        {/* Expanded Receipt Modal */}
+        <NeuModal
+          isOpen={!!expandedReceiptModalApt}
+          onClose={() => setExpandedReceiptModalApt(null)}
+          title={`Payment Receipt Screenshot — ${expandedReceiptModalApt?.referenceNumber || ''}`}
+          subtitle={`Patient: ${expandedReceiptModalApt?.patientName || ''} · Amount: ₱${expandedReceiptModalApt?.paymentAmountPhp || 10}.00 PHP`}
+        >
+          {expandedReceiptModalApt && (
+            <div className="space-y-4">
+              <div className="max-h-[60vh] overflow-auto rounded-2xl border border-black/10 bg-black/5 p-2 flex items-center justify-center">
+                {expandedReceiptModalApt.paymentReceiptUrl ? (
+                  <img
+                    src={expandedReceiptModalApt.paymentReceiptUrl}
+                    alt="Full Payment Receipt"
+                    className="max-w-full h-auto rounded-xl object-contain"
+                  />
+                ) : (
+                  <div className="p-6 text-xs font-semibold text-rose-600">No receipt image attached</div>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-black/5">
+                <NeuButton size="sm" onClick={() => setExpandedReceiptModalApt(null)}>
+                  Close
+                </NeuButton>
+                <NeuButton
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    const apt = expandedReceiptModalApt;
+                    setExpandedReceiptModalApt(null);
+                    setRejectPaymentModalApt(apt);
+                    setPaymentRejectionReasonInput('Receipt screenshot unreadable or incomplete. Please resubmit a clear screenshot.');
+                  }}
+                >
+                  Reject / Request New Receipt
+                </NeuButton>
+                <NeuButton
+                  size="sm"
+                  variant="primary"
+                  onClick={() => {
+                    const apt = expandedReceiptModalApt;
+                    if (apt) {
+                      onConfirmPayment?.(apt.id);
+                      setAdminToast(`Verified payment for ${apt.referenceNumber} (${apt.patientName}). Status set to PAID & CONFIRMED.`);
+                    }
+                    setExpandedReceiptModalApt(null);
+                  }}
+                >
+                  ✓ Confirm Payment &amp; Approve Appointment
+                </NeuButton>
+              </div>
+            </div>
+          )}
+        </NeuModal>
+
+        {/* Reject Payment Modal */}
+        <NeuModal
+          isOpen={!!rejectPaymentModalApt}
+          onClose={() => setRejectPaymentModalApt(null)}
+          title={`Reject Payment Receipt — ${rejectPaymentModalApt?.referenceNumber || ''}`}
+          subtitle="The appointment will remain unconfirmed until the patient resubmits a valid payment receipt screenshot."
+        >
+          {rejectPaymentModalApt && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#172B4D] mb-1">
+                  Rejection Reason / Instruction for Patient:
+                </label>
+                <textarea
+                  value={paymentRejectionReasonInput}
+                  onChange={(e) => setPaymentRejectionReasonInput(e.target.value)}
+                  rows={3}
+                  className="neu-inset w-full rounded-xl p-3 text-xs text-[#172B4D] bg-[#E9EEF3]"
+                  placeholder="Explain why the receipt was rejected (e.g., blurred screenshot, incorrect amount, missing reference)..."
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-black/5">
+                <NeuButton size="sm" onClick={() => setRejectPaymentModalApt(null)}>
+                  Cancel
+                </NeuButton>
+                <NeuButton
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    if (rejectPaymentModalApt) {
+                      onRejectPayment?.(
+                        rejectPaymentModalApt.id,
+                        paymentRejectionReasonInput.trim() || 'Receipt screenshot unreadable or invalid.'
+                      );
+                      setAdminToast(`Rejected payment receipt for ${rejectPaymentModalApt.referenceNumber}. Patient notified to resubmit.`);
+                    }
+                    setRejectPaymentModalApt(null);
+                  }}
+                >
+                  Reject Receipt &amp; Notify Patient
+                </NeuButton>
+              </div>
+            </div>
+          )}
+        </NeuModal>
       </div>
     );
   }
@@ -1633,6 +1890,82 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
           </p>
         </div>
 
+        {/* Language & Localization Settings: English & Tagalog */}
+        <NeuCard className="w-full space-y-4 border border-[#3478F6]/25">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/5 pb-3">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold text-[#3478F6] flex items-center gap-1.5">
+                <Languages className="w-4 h-4" />
+                <span>System Language & Localization Settings</span>
+              </div>
+              <h2 className="text-base font-bold text-[#172B4D]">
+                Language Preference / Pagpili ng Wika (English / Tagalog)
+              </h2>
+            </div>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold ${
+                isTagalog ? 'bg-[#16865C]/15 text-[#16865C]' : 'bg-[#3478F6]/15 text-[#3478F6]'
+              }`}
+            >
+              {isTagalog ? '✓ Naka-Tagalog' : '✓ English Active'}
+            </span>
+          </div>
+
+          <p className="text-xs text-[#64748B]">
+            Piliin ang nais mong wika para sa buong system. Kapag pinili ang <strong className="text-[#172B4D]">Tagalog</strong>, lahat ng pangungusap, botones, at abiso ay magiging Tagalog; kapag <strong className="text-[#172B4D]">English</strong>, magiging English ang lahat.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`p-4 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer border ${
+                !isTagalog
+                  ? 'border-[#3478F6] bg-[#3478F6]/5 ring-2 ring-[#3478F6]/20'
+                  : 'neu-inset-sm border-black/5 hover:bg-black/[0.02]'
+              }`}
+            >
+              <div>
+                <div className="font-bold text-sm text-[#172B4D] flex items-center gap-2">
+                  <span>English</span>
+                  {!isTagalog && (
+                    <span className="text-[10px] bg-[#3478F6] text-white px-2 py-0.5 rounded-full font-bold">
+                      Selected
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-[#64748B] mt-1">
+                  Default professional healthcare and clinical terminology in English.
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLanguage('tl')}
+              className={`p-4 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer border ${
+                isTagalog
+                  ? 'border-[#16865C] bg-[#16865C]/5 ring-2 ring-[#16865C]/20'
+                  : 'neu-inset-sm border-black/5 hover:bg-black/[0.02]'
+              }`}
+            >
+              <div>
+                <div className="font-bold text-sm text-[#172B4D] flex items-center gap-2">
+                  <span>Tagalog (Filipino)</span>
+                  {isTagalog && (
+                    <span className="text-[10px] bg-[#16865C] text-white px-2 py-0.5 rounded-full font-bold">
+                      Pinili
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-[#64748B] mt-1">
+                  Lahat ng pangungusap, iskedyul, mga abiso, at botones ay isasalin sa Tagalog.
+                </div>
+              </div>
+            </button>
+          </div>
+        </NeuCard>
+
         <div className="w-full">
           <NeuCard className="w-full space-y-4">
             <h2 className="text-base font-bold text-[#172B4D] border-b border-black/5 pb-2">
@@ -1678,6 +2011,170 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
             />
           </NeuCard>
         </div>
+
+        {/* Clinic Receiving QR Code & Payment Setup */}
+        <NeuCard className="w-full space-y-4 border border-[#3478F6]/25">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/5 pb-3">
+            <div>
+              <div className="text-xs font-bold text-[#3478F6] flex items-center gap-1.5">
+                <QrCode className="w-4 h-4" />
+                <span>Clinic Receiving Payment QR Code &amp; Consultation Fee Configuration</span>
+              </div>
+              <h2 className="text-base font-bold text-[#172B4D]">
+                Clinic QR Code &amp; Account Details Setup
+              </h2>
+              <p className="text-xs text-[#64748B]">
+                Upload your clinic's official receiving QR code (GCash, Maya, or QR Ph) and account credentials shown to patients during appointment booking step 6.
+              </p>
+            </div>
+            {systemSettings.clinicQrCodeUrl ? (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#16865C]/15 text-[#16865C]">
+                ✓ Clinic Receiving QR Code Configured
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                ⚠️ Setup Required (Booking Paused)
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <NeuInput
+                label="Consultation Fee (PHP)"
+                type="number"
+                value={qrFeePhp}
+                onChange={(e) => setQrFeePhp(Number(e.target.value) || 0)}
+              />
+              <NeuInput
+                label="Account / Beneficiary Name"
+                value={qrAccountName}
+                onChange={(e) => setQrAccountName(e.target.value)}
+                placeholder="e.g., TeleHealth Medical Center Inc."
+              />
+              <NeuInput
+                label="Mobile / Account Number"
+                value={qrAccountNumber}
+                onChange={(e) => setQrAccountNumber(e.target.value)}
+                placeholder="e.g., 0917-888-9999"
+              />
+              <NeuInput
+                label="Bank / Payment App Label"
+                value={qrBankName}
+                onChange={(e) => setQrBankName(e.target.value)}
+                placeholder="e.g., GCash / Maya / QR Ph"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-[#172B4D]">
+                Clinic Receiving QR Code Image (PNG / JPEG / WebP, &lt; 5MB)
+              </label>
+
+              {/* Hidden File Input using Ref */}
+              <input
+                ref={adminQrFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
+                  if (!validTypes.includes(file.type)) {
+                    setQrFileError('Invalid file format. Please select PNG, JPEG, or WebP. / Hindi suportado ang format.');
+                    e.target.value = '';
+                    return;
+                  }
+                  if (file.size > 5 * 1024 * 1024) {
+                    setQrFileError('File size exceeds 5 MB maximum limit. / Ang laki ng file ay lumampas sa 5 MB.');
+                    e.target.value = '';
+                    return;
+                  }
+                  setQrFileError(null);
+                  const reader = new FileReader();
+                  reader.onload = (evt) => {
+                    const res = evt.target?.result as string;
+                    if (res) setQrCodeDataUrl(res);
+                  };
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }}
+              />
+
+              <div className="neu-inset rounded-2xl p-4 flex flex-col items-center justify-center text-center space-y-3 bg-[#E9EEF3]">
+                {qrCodeDataUrl ? (
+                  <div className="relative group">
+                    <img
+                      src={qrCodeDataUrl}
+                      alt="Clinic QR Preview"
+                      className="w-48 h-48 object-contain rounded-xl border border-black/10 bg-white p-2 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setQrCodeDataUrl('')}
+                      className="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full p-1 text-xs shadow hover:bg-rose-700 cursor-pointer"
+                      title="Clear QR Code"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-6 px-4 border-2 border-dashed border-black/15 rounded-xl w-full flex flex-col items-center justify-center">
+                    <QrCode className="w-10 h-10 text-[#64748B] mb-2" />
+                    <div className="text-xs font-bold text-[#172B4D]">No Receiving QR Image Uploaded</div>
+                    <div className="text-[11px] text-[#64748B] mt-0.5">
+                      Patients cannot submit payment receipts until a valid QR code is uploaded.
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <NeuButton
+                    size="sm"
+                    variant="primary"
+                    type="button"
+                    onClick={() => adminQrFileInputRef.current?.click()}
+                  >
+                    {qrCodeDataUrl ? 'Replace QR Code Image / Palitan' : 'Select & Upload QR Code Image / Pumili ng QR'}
+                  </NeuButton>
+                  {qrCodeDataUrl !== '/assets/aistudio/image_3826cde4.png' && (
+                    <NeuButton
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        setQrCodeDataUrl('/assets/aistudio/image_3826cde4.png');
+                        if (adminQrFileInputRef.current) adminQrFileInputRef.current.value = '';
+                      }}
+                    >
+                      Reset to Default QR / I-reset sa Default
+                    </NeuButton>
+                  )}
+                </div>
+                {qrFileError && <div className="text-xs font-semibold text-rose-600">{qrFileError}</div>}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-black/5 flex justify-end">
+            <NeuButton
+              variant="primary"
+              onClick={() => {
+                onUpdateSystemSettings({
+                  ...systemSettings,
+                  clinicQrAccountName: qrAccountName,
+                  clinicQrAccountNumber: qrAccountNumber,
+                  clinicQrBankName: qrBankName,
+                  consultationFeePhp: Number(qrFeePhp) || 10,
+                  clinicQrCodeUrl: qrCodeDataUrl,
+                });
+                setAdminToast('Saved clinic receiving payment QR code and consultation fee settings successfully.');
+              }}
+            >
+              💾 Save Clinic QR Code &amp; Fee Settings
+            </NeuButton>
+          </div>
+        </NeuCard>
 
         {/* Official OTP Sender Gmail Connection (telehealthotp@gmail.com) */}
         <NeuCard className="w-full space-y-4 border border-[#3478F6]/25">
@@ -2013,20 +2510,20 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
       </NeuModal>
 
       {/* Combined Radial Pie Infographic Card */}
-      <NeuCard className="p-4 sm:p-5 border border-[#3478F6]/20 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-black/10">
+      <NeuCard className="p-4 sm:p-5 space-y-3 !bg-[#1E293B]/75 backdrop-blur-xl border border-white/25 shadow-[0_12px_36px_rgba(15,23,42,0.32),inset_0_1px_1px_rgba(255,255,255,0.25)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-white/15">
           <div>
-            <h2 className="text-base font-bold text-[#172B4D]">
+            <h2 className="text-base font-bold text-white">
               Clinic Operations Pie Infographic
             </h2>
-            <p className="text-[11px] text-[#64748B]">
+            <p className="text-[11px] text-slate-300">
               Click any sector on the radial infographic to open its corresponding clinical management view.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs">
-            <div className="neu-inset rounded-xl px-3.5 py-1.5 text-right">
-              <div className="text-[10px] text-[#64748B] font-semibold">Total Tracked Records</div>
-              <div className="text-base font-extrabold font-mono-tabular text-[#172B4D]">
+            <div className="rounded-xl px-3.5 py-1.5 text-right bg-white/10 backdrop-blur-md border border-white/20 shadow-inner">
+              <div className="text-[10px] text-slate-300 font-semibold">Total Tracked Records</div>
+              <div className="text-base font-extrabold font-mono-tabular text-white">
                 {totalPieSum}
               </div>
             </div>

@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -434,6 +435,373 @@ CRITICAL RULES:
       res.status(500).json({
         error: err?.message || 'Failed to process clinical symptom assessment.',
       });
+    }
+  });
+
+  // ==========================================================================
+  // ==========================================================================
+  // PAYMONGO QR PH INTEGRATION (Environment-Driven Test/Live Support)
+  // ==========================================================================
+  const serverAuthoritativeFeeRates: Record<string, number> = {};
+  const processedPayMongoEventIds = new Set<string>();
+
+  function getPaymongoConfig() {
+    const envRaw = (process.env.PAYMONGO_ENVIRONMENT || 'test').toLowerCase();
+    const mode: 'live' | 'test' = envRaw === 'live' || envRaw === 'production' ? 'live' : 'test';
+    const secretKey = process.env.PAYMONGO_SECRET_KEY || '';
+    const publicKey = process.env.PAYMONGO_PUBLIC_KEY || '';
+    const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET || '';
+
+    if (!secretKey || secretKey.includes('placeholder')) {
+      return {
+        valid: false,
+        errorType: 'PAYMONGO_NOT_CONFIGURED',
+        errorMessage: `PayMongo ${mode.toUpperCase()} mode secret key (PAYMONGO_SECRET_KEY) is not configured in server environment variables.`,
+        mode,
+        secretKey: '',
+        publicKey: '',
+        webhookSecret: '',
+      };
+    }
+
+    if (mode === 'live') {
+      if (!secretKey.startsWith('sk_live_')) {
+        return {
+          valid: false,
+          errorType: 'KEY_MISMATCH',
+          errorMessage:
+            'PAYMONGO_ENVIRONMENT is set to "live", but PAYMONGO_SECRET_KEY does not start with "sk_live_". Live mode requires valid sk_live_* credentials.',
+          mode,
+          secretKey,
+          publicKey,
+          webhookSecret,
+        };
+      }
+      if (publicKey && !publicKey.includes('placeholder') && !publicKey.startsWith('pk_live_')) {
+        return {
+          valid: false,
+          errorType: 'KEY_MISMATCH',
+          errorMessage:
+            'PAYMONGO_ENVIRONMENT is set to "live", but PAYMONGO_PUBLIC_KEY does not start with "pk_live_". Live mode requires valid pk_live_* credentials.',
+          mode,
+          secretKey,
+          publicKey,
+          webhookSecret,
+        };
+      }
+    } else {
+      if (secretKey.startsWith('sk_live_')) {
+        return {
+          valid: false,
+          errorType: 'KEY_MISMATCH',
+          errorMessage:
+            'PAYMONGO_ENVIRONMENT is set to "test", but PAYMONGO_SECRET_KEY starts with "sk_live_". Set PAYMONGO_ENVIRONMENT="live" to enable live mode or use "sk_test_*" key.',
+          mode,
+          secretKey,
+          publicKey,
+          webhookSecret,
+        };
+      }
+    }
+
+    return {
+      valid: true,
+      errorType: null,
+      errorMessage: null,
+      mode,
+      secretKey,
+      publicKey,
+      webhookSecret,
+    };
+  }
+
+  function getAuthoritativeFeePhp(): { valid: boolean; feePhp: number; errorMessage?: string } {
+    const envVal = process.env.PAYMONGO_CONSULTATION_FEE_PHP ?? '10';
+    const parsed = parseFloat(envVal);
+    if (isNaN(parsed) || parsed <= 0) {
+      return {
+        valid: false,
+        feePhp: 0,
+        errorMessage:
+          'PAYMONGO_CONSULTATION_FEE_PHP server environment variable is missing, invalid, or zero. A valid fee rate > 0 is required.',
+      };
+    }
+    return { valid: true, feePhp: parsed };
+  }
+
+  // GET /api/payments/paymongo/config-status
+  app.get('/api/payments/paymongo/config-status', (_req, res) => {
+    const config = getPaymongoConfig();
+    const feeInfo = getAuthoritativeFeePhp();
+    res.json({
+      mode: config.mode,
+      isConfigured: config.valid && feeInfo.valid,
+      errorType: !config.valid ? config.errorType : !feeInfo.valid ? 'FEE_NOT_CONFIGURED' : null,
+      errorMessage: !config.valid ? config.errorMessage : !feeInfo.valid ? feeInfo.errorMessage : null,
+      apiHost: 'https://api.paymongo.com/v1',
+      consultationFeePhp: feeInfo.feePhp,
+      consultationFeeLabel: feeInfo.valid ? `₱${feeInfo.feePhp.toFixed(2)} PHP` : 'Fee Not Configured',
+    });
+  });
+
+  // POST /api/payments/paymongo/create-intent
+  app.post('/api/payments/paymongo/create-intent', async (req, res) => {
+    try {
+      const { appointmentId, referenceNumber } = req.body || {};
+      if (!appointmentId || !referenceNumber) {
+        res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Missing required appointmentId or referenceNumber.',
+        });
+        return;
+      }
+
+      const config = getPaymongoConfig();
+      if (!config.valid) {
+        res.status(400).json({
+          error: config.errorType,
+          message: config.errorMessage,
+          mode: config.mode,
+        });
+        return;
+      }
+
+      // Check authoritative server fee schedule
+      const feeInfo = getAuthoritativeFeePhp();
+      if (!feeInfo.valid) {
+        res.status(400).json({
+          error: 'FEE_NOT_CONFIGURED',
+          message:
+            feeInfo.errorMessage ||
+            'No authoritative server-side PHP fee schedule is configured. PayMongo Payment Intent creation is refused until a valid consultation fee is set.',
+          mode: config.mode,
+        });
+        return;
+      }
+
+      const feeAmountPhp = feeInfo.feePhp;
+      const amountInCentavos = Math.round(feeAmountPhp * 100);
+      const authHeader = `Basic ${Buffer.from(`${config.secretKey}:`).toString('base64')}`;
+
+      // Create Payment Intent via POST https://api.paymongo.com/v1/payment_intents
+      const paymongoRes = await fetch('https://api.paymongo.com/v1/payment_intents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              amount: amountInCentavos,
+              payment_method_allowed: ['qrph'],
+              currency: 'PHP',
+              description: `TeleHealth Consultation Fee (${referenceNumber})`,
+              statement_descriptor: 'TeleHealth Medical',
+              metadata: {
+                bookingReference: referenceNumber,
+                appointmentId,
+                environmentMode: config.mode,
+              },
+            },
+          },
+        }),
+      });
+
+      const paymongoData: any = await paymongoRes.json();
+
+      if (!paymongoRes.ok) {
+        res.status(paymongoRes.status).json({
+          error: 'PAYMONGO_API_ERROR',
+          message:
+            paymongoData?.errors?.[0]?.detail ||
+            'Failed to create PayMongo Payment Intent for QR Ph.',
+          details: paymongoData,
+          mode: config.mode,
+        });
+        return;
+      }
+
+      const intent = paymongoData.data;
+      res.json({
+        paymentIntentId: intent.id,
+        clientKey: intent.attributes.client_key,
+        amountCentavos: intent.attributes.amount,
+        currency: intent.attributes.currency,
+        status: intent.attributes.status,
+        mode: config.mode,
+      });
+    } catch (err: any) {
+      console.error('PayMongo Payment Intent Error:', err);
+      res.status(500).json({
+        error: 'SERVER_ERROR',
+        message: err?.message || 'An unexpected error occurred creating PayMongo Payment Intent.',
+      });
+    }
+  });
+
+  // POST /api/payments/paymongo/attach-qrph
+  app.post('/api/payments/paymongo/attach-qrph', async (req, res) => {
+    try {
+      const { paymentIntentId, clientKey } = req.body || {};
+      if (!paymentIntentId || !clientKey) {
+        res.status(400).json({ error: 'INVALID_REQUEST', message: 'Missing paymentIntentId or clientKey.' });
+        return;
+      }
+
+      const config = getPaymongoConfig();
+      if (!config.valid) {
+        res.status(400).json({ error: config.errorType, message: config.errorMessage, mode: config.mode });
+        return;
+      }
+
+      const authHeader = `Basic ${Buffer.from(`${config.secretKey}:`).toString('base64')}`;
+
+      // 1. Create Payment Method (type: qrph)
+      const pmRes = await fetch('https://api.paymongo.com/v1/payment_methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              type: 'qrph',
+            },
+          },
+        }),
+      });
+      const pmData: any = await pmRes.json();
+      if (!pmRes.ok) {
+        res.status(pmRes.status).json({
+          error: 'PAYMONGO_METHOD_ERROR',
+          message: pmData?.errors?.[0]?.detail || 'Failed to create QR Ph Payment Method.',
+          mode: config.mode,
+        });
+        return;
+      }
+
+      const paymentMethodId = pmData.data.id;
+
+      // 2. Attach Payment Method to Payment Intent
+      const attachRes = await fetch(`https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/attach`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({
+          data: {
+            attributes: {
+              payment_method: paymentMethodId,
+              client_key: clientKey,
+            },
+          },
+        }),
+      });
+
+      const attachData: any = await attachRes.json();
+      if (!attachRes.ok) {
+        res.status(attachRes.status).json({
+          error: 'PAYMONGO_ATTACH_ERROR',
+          message: attachData?.errors?.[0]?.detail || 'Failed to attach QR Ph method to Payment Intent.',
+          mode: config.mode,
+        });
+        return;
+      }
+
+      const nextAction = attachData?.data?.attributes?.next_action;
+      const qrCodeImageUrl = nextAction?.code?.image_url || nextAction?.redirect?.url;
+
+      res.json({
+        paymentIntentId,
+        paymentStatus: attachData?.data?.attributes?.status,
+        qrCodeImageUrl,
+        mode: config.mode,
+      });
+    } catch (err: any) {
+      console.error('PayMongo Attach Error:', err);
+      res.status(500).json({ error: 'SERVER_ERROR', message: err?.message });
+    }
+  });
+
+  // POST /api/payments/paymongo/webhook
+  app.post('/api/payments/paymongo/webhook', async (req, res) => {
+    try {
+      const signatureHeader = req.headers['paymongo-signature'] as string;
+      const config = getPaymongoConfig();
+      const webhookSecret = config.webhookSecret;
+
+      const rawBody = JSON.stringify(req.body);
+
+      // Verify PayMongo HMAC-SHA256 Signature
+      if (signatureHeader && webhookSecret && !webhookSecret.includes('placeholder')) {
+        const parts = signatureHeader.split(',').reduce((acc: Record<string, string>, p) => {
+          const [k, v] = p.split('=');
+          if (k && v) acc[k.trim()] = v.trim();
+          return acc;
+        }, {});
+
+        const timestamp = parts.t;
+        const testSig = parts.te;
+        const liveSig = parts.li;
+
+        // Mode-aware signature evaluation
+        const providedSig = config.mode === 'live' ? (liveSig || testSig) : (testSig || liveSig);
+
+        if (config.mode === 'live' && !liveSig) {
+          console.warn('PayMongo Webhook Warning: Live mode webhook received without "li" signature component.');
+        }
+
+        if (timestamp && providedSig) {
+          // Enforce 5-minute (300s) timestamp freshness window
+          const nowSeconds = Math.floor(Date.now() / 1000);
+          const timeDiff = Math.abs(nowSeconds - parseInt(timestamp, 10));
+          if (timeDiff > 300) {
+            console.warn('PayMongo Webhook Error: Timestamp out of freshness window.');
+            res.status(401).json({ error: 'EXPIRED_TIMESTAMP', message: 'Webhook timestamp expired.' });
+            return;
+          }
+
+          const computedHmac = crypto
+            .createHmac('sha256', webhookSecret)
+            .update(`${timestamp}.${rawBody}`)
+            .digest('hex');
+
+          const bufComputed = Buffer.from(computedHmac);
+          const bufProvided = Buffer.from(providedSig);
+
+          if (bufComputed.length !== bufProvided.length || !crypto.timingSafeEqual(bufComputed, bufProvided)) {
+            console.warn('PayMongo Webhook Warning: HMAC-SHA256 signature mismatch.');
+            res.status(401).json({ error: 'INVALID_SIGNATURE', message: 'Timing-safe HMAC signature comparison failed.' });
+            return;
+          }
+        }
+      }
+
+      const event = req.body?.data;
+      if (!event || !event.id) {
+        res.status(400).json({ error: 'INVALID_EVENT', message: 'Missing event body or ID.' });
+        return;
+      }
+
+      // Event Deduplication
+      if (processedPayMongoEventIds.has(event.id)) {
+        console.log(`PayMongo Webhook: Duplicate event ${event.id} ignored.`);
+        res.json({ status: 'DUPLICATE_IGNORED', id: event.id });
+        return;
+      }
+      processedPayMongoEventIds.add(event.id);
+
+      const eventType = event.attributes?.type;
+      const resourceData = event.attributes?.data;
+
+      console.log(`PayMongo Webhook Received (${config.mode.toUpperCase()} mode): type=${eventType}, eventId=${event.id}`);
+
+      if (eventType === 'payment.paid') {
+        const bookingRef = resourceData?.attributes?.metadata?.bookingReference;
+        console.log(`PayMongo Payment Success Verified (${config.mode.toUpperCase()} mode) for Booking Ref: ${bookingRef}`);
+      }
+
+      res.json({ status: 'PROCESSED', id: event.id, mode: config.mode });
+    } catch (err: any) {
+      console.error('PayMongo Webhook Error:', err);
+      res.status(500).json({ error: 'WEBHOOK_ERROR', message: err?.message });
     }
   });
 

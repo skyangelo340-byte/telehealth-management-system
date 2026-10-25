@@ -21,7 +21,9 @@ import {
   Loader2,
   MoreVertical,
   Image as ImageIcon,
+  Languages,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import { PrescriptionPdfModal } from '../../components/ui/PrescriptionPdfModal';
 import {
   buildResetaPdfDocument,
@@ -110,6 +112,7 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
   onMarkAllNotificationsRead,
   assessments,
 }) => {
+  const { language, setLanguage, isTagalog } = useLanguage();
   const [delayNoticeToast, setDelayNoticeToast] = useState<string>('');
   const [delayReasonDraft, setDelayReasonDraft] = useState<string>('');
   const doctorAppointments = useMemo(
@@ -1609,20 +1612,20 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
             >
               {/* FRONT FACE: Request Leave, Absent Date, or Slot Block Form */}
               <NeuCard
-                className={`[grid-area:1/1] [backface-visibility:hidden] space-y-4 border border-[#3478F6]/20 ${
+                className={`[grid-area:1/1] [backface-visibility:hidden] space-y-4 !bg-[#1E293B]/75 backdrop-blur-xl border border-white/25 shadow-[0_12px_36px_rgba(15,23,42,0.32),inset_0_1px_1px_rgba(255,255,255,0.25)] [&_label]:!text-slate-100 ${
                   isLeaveCardFlipped ? 'pointer-events-none select-none' : ''
                 }`}
               >
-                <div className="border-b border-black/10 pb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="border-b border-white/15 pb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h2 className="text-sm font-bold text-[#172B4D]">
+                    <h2 className="text-sm font-bold text-white">
                       2. Request Leave, Absent Date, or Slot Block
                     </h2>
-                    <p className="text-[11px] text-[#64748B]">
+                    <p className="text-[11px] text-slate-300">
                       Submit leave or slot block requests to the Admin Physician Leave queue.
                     </p>
                   </div>
-                  <span className="neu-inset-sm px-2.5 py-1 rounded-lg text-[11px] font-semibold text-[#C87A14]">
+                  <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#F59E0B]/20 text-[#FBBF24] border border-[#FBBF24]/30">
                     Subject to Admin Review
                   </span>
                 </div>
@@ -1689,9 +1692,9 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                   />
 
                   <div className="flex items-center justify-between gap-2 pt-1">
-                    <span className="text-[11px] text-[#64748B]">
+                    <span className="text-[11px] text-slate-300">
                       Status upon submission:{' '}
-                      <strong className="text-[#C87A14]">Pending Approval</strong>
+                      <strong className="text-[#FBBF24]">Pending Approval</strong>
                     </span>
                     <NeuButton type="submit" variant="primary" size="sm">
                       Submit Request for Admin Approval
@@ -1700,17 +1703,17 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                 </form>
 
                 {/* Existing Blocks & Leave Requests List */}
-                <div className="pt-3 border-t border-black/5 space-y-2.5">
+                <div className="pt-3 border-t border-white/15 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#172B4D]">
+                    <span className="font-bold text-white">
                       Submitted Leave, Absent &amp; Slot Block Requests ({schedule.blocks.length})
                     </span>
-                    <span className="text-[11px] text-[#64748B]">
+                    <span className="text-[11px] text-slate-300">
                       Only Approved requests block patient slots
                     </span>
                   </div>
                   {schedule.blocks.length === 0 ? (
-                    <div className="neu-inset rounded-xl p-4 text-center text-xs text-[#64748B]">
+                    <div className="rounded-xl p-4 text-center text-xs text-slate-300 bg-white/10 backdrop-blur-md border border-white/15">
                       No leave, absence, or slot block requests submitted yet.
                     </div>
                   ) : (
@@ -1718,36 +1721,36 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                       {schedule.blocks.map((b) => (
                         <div
                           key={b.id}
-                          className="neu-inset rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                          className="rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs bg-white/10 backdrop-blur-md border border-white/20 shadow-inner"
                         >
                           <div className="space-y-0.5">
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="font-bold text-[#172B4D]">
+                              <span className="font-bold text-white">
                                 {b.type === 'Blocked Date'
                                   ? 'Full-Day Absent / Blocked Date'
                                   : b.type === 'Break Override'
                                     ? 'Weekly Working Days Update'
                                     : b.type}
                               </span>
-                              <span>·</span>
-                              <span className="font-mono-tabular font-semibold text-[#3478F6]">
+                              <span className="text-slate-400">·</span>
+                              <span className="font-mono-tabular font-semibold text-[#60A5FA]">
                                 {b.startDate}
                                 {b.endDate && b.endDate !== b.startDate ? ` → ${b.endDate}` : ''}
                               </span>
                               {b.slotStartTime && (
-                                <span className="font-mono-tabular text-[#16865C] font-semibold">
+                                <span className="font-mono-tabular text-[#34D399] font-semibold">
                                   ({b.slotStartTime})
                                 </span>
                               )}
                             </div>
-                            <div className="text-[#64748B]">Reason: {b.reason}</div>
+                            <div className="text-slate-300">Reason: {b.reason}</div>
                             {b.status === 'Pending Approval' && (
-                              <div className="text-[11px] text-[#C87A14] font-medium">
+                              <div className="text-[11px] text-[#FBBF24] font-medium">
                                 Awaiting Admin approval — slots remain open until approved by Administrator.
                               </div>
                             )}
                             {b.status === 'Rejected' && b.rejectionReason && (
-                              <div className="text-[11px] text-[#D63649] font-medium">
+                              <div className="text-[11px] text-[#F87171] font-medium">
                                 Declined by Admin: {b.rejectionReason}
                               </div>
                             )}
@@ -1773,40 +1776,40 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
 
               {/* BACK FACE (Flipped): Waiting for Approval with Loading Animation Circle */}
               <NeuCard
-                className={`[grid-area:1/1] [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center text-center p-8 space-y-5 border-2 border-[#C87A14]/45 ${
+                className={`[grid-area:1/1] [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center text-center p-8 space-y-5 !bg-[#1E293B]/75 backdrop-blur-xl border border-white/25 shadow-[0_12px_36px_rgba(15,23,42,0.32),inset_0_1px_1px_rgba(255,255,255,0.25)] ${
                   !isLeaveCardFlipped ? 'pointer-events-none select-none' : ''
                 }`}
               >
                 <div className="relative flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full border-4 border-[#C87A14]/20 border-t-[#C87A14] animate-spin" />
-                  <CalendarClock className="w-7 h-7 text-[#C87A14] absolute" />
+                  <div className="w-20 h-20 rounded-full border-4 border-[#F59E0B]/30 border-t-[#FBBF24] animate-spin" />
+                  <CalendarClock className="w-7 h-7 text-[#FBBF24] absolute" />
                 </div>
 
                 <div className="space-y-1.5 max-w-sm">
-                  <span className="inline-block px-3 py-1 rounded-full bg-[#C87A14]/15 text-[#C87A14] text-[11px] font-extrabold uppercase tracking-wider">
+                  <span className="inline-block px-3 py-1 rounded-full bg-[#F59E0B]/20 text-[#FBBF24] border border-[#FBBF24]/30 text-[11px] font-extrabold uppercase tracking-wider">
                     2. Leave / Absence / Slot Block Request
                   </span>
-                  <h3 className="text-lg font-extrabold text-[#172B4D]">
+                  <h3 className="text-lg font-extrabold text-white">
                     Waiting for Approval
                   </h3>
-                  <p className="text-xs text-[#64748B] leading-relaxed">
+                  <p className="text-xs text-slate-300 leading-relaxed">
                     Your leave or slot block request has been submitted to the System Administrator and is currently awaiting review.
                   </p>
                 </div>
 
                 {latestPendingLeaveBlock && (
-                  <div className="neu-inset rounded-2xl p-4 w-full max-w-md space-y-2 text-xs text-left">
+                  <div className="rounded-2xl p-4 w-full max-w-md space-y-2 text-xs text-left bg-white/10 backdrop-blur-md border border-white/20 shadow-inner">
                     <div className="flex items-center justify-between">
-                      <span className="text-[#64748B]">Request Type:</span>
-                      <span className="font-bold text-[#172B4D]">
+                      <span className="text-slate-300">Request Type:</span>
+                      <span className="font-bold text-white">
                         {latestPendingLeaveBlock.type === 'Blocked Date'
                           ? 'Full-Day Absent / Blocked Date'
                           : latestPendingLeaveBlock.type}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between border-t border-black/5 pt-2">
-                      <span className="text-[#64748B]">Target Date / Slot:</span>
-                      <span className="font-mono-tabular font-bold text-[#3478F6]">
+                    <div className="flex items-center justify-between border-t border-white/15 pt-2">
+                      <span className="text-slate-300">Target Date / Slot:</span>
+                      <span className="font-mono-tabular font-bold text-[#60A5FA]">
                         {latestPendingLeaveBlock.startDate}
                         {latestPendingLeaveBlock.endDate &&
                         latestPendingLeaveBlock.endDate !== latestPendingLeaveBlock.startDate
@@ -1817,9 +1820,9 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                           : ''}
                       </span>
                     </div>
-                    <div className="border-t border-black/5 pt-2">
-                      <span className="text-[#64748B] block">Submitted Reason:</span>
-                      <span className="font-medium text-[#172B4D] mt-0.5 block">
+                    <div className="border-t border-white/15 pt-2">
+                      <span className="text-slate-300 block">Submitted Reason:</span>
+                      <span className="font-medium text-white mt-0.5 block">
                         {latestPendingLeaveBlock.reason}
                       </span>
                     </div>
@@ -1880,6 +1883,53 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
             value={docProfileForm.bio}
             onChange={(e) => setDocProfileForm((p) => ({ ...p, bio: e.target.value }))}
           />
+
+          {/* Language Preference Card for Doctors */}
+          <div className="pt-2 border-t border-black/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Languages className="w-4 h-4 text-[#3478F6]" />
+                <span className="text-xs font-bold text-[#172B4D]">
+                  Preferred Language / Nais na Wika
+                </span>
+              </div>
+              <span
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                  isTagalog ? 'bg-[#16865C]/15 text-[#16865C]' : 'bg-[#3478F6]/15 text-[#3478F6]'
+                }`}
+              >
+                {isTagalog ? '✓ Naka-Tagalog' : '✓ English Active'}
+              </span>
+            </div>
+            <p className="text-xs text-[#64748B]">
+              Piliin ang nais mong wika para sa buong console ng doktor (English o Tagalog).
+            </p>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  !isTagalog
+                    ? 'border-[#3478F6] bg-[#3478F6]/10 text-[#3478F6] ring-1 ring-[#3478F6]'
+                    : 'neu-inset-sm text-[#64748B] hover:text-[#172B4D]'
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('tl')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  isTagalog
+                    ? 'border-[#16865C] bg-[#16865C]/10 text-[#16865C] ring-1 ring-[#16865C]'
+                    : 'neu-inset-sm text-[#64748B] hover:text-[#172B4D]'
+                }`}
+              >
+                Tagalog
+              </button>
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <NeuButton
               variant="primary"
@@ -2150,6 +2200,36 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                     >
                       Inspect Intake
                     </NeuButton>
+                    {req.paymentReceiptUrl && (
+                      <NeuButton
+                        size="sm"
+                        onClick={() => {
+                          if (req.paymentReceiptUrl) {
+                            const receiptWindow = null;
+                            const overlay = document.createElement('div');
+                            overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(2,6,23,.88);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+                            overlay.setAttribute('role', 'dialog');
+                            overlay.setAttribute('aria-label', 'Payment receipt');
+                            overlay.tabIndex = 0;
+                            const image = document.createElement('img');
+                            image.src = req.paymentReceiptUrl;
+                            image.alt = 'Payment receipt';
+                            image.style.cssText = 'max-width:95vw;max-height:90vh;object-fit:contain;border-radius:12px;background:white;box-shadow:0 20px 60px rgba(0,0,0,.45)';
+                            overlay.appendChild(image);
+                            overlay.addEventListener('click', () => overlay.remove());
+                            overlay.addEventListener('keydown', event => { if (event.key === 'Escape') overlay.remove(); });
+                            document.body.appendChild(overlay);
+                            overlay.focus();
+                            if (receiptWindow) {
+                              receiptWindow.document.write('<!doctype html><html><head><title>Payment receipt</title><style>body{margin:0;background:#111;display:grid;place-items:center;min-height:100vh}img{max-width:96vw;max-height:96vh;object-fit:contain}</style></head><body><img src="' + req.paymentReceiptUrl + '" alt="Payment receipt"></body></html>');
+                              receiptWindow.document.close();
+                            }
+                          }
+                        }}
+                      >
+                        View Receipt
+                      </NeuButton>
+                    )}
                   </div>
                 </NeuCard>
               ))}

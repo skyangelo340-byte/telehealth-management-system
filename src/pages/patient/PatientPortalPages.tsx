@@ -29,7 +29,9 @@ import {
   Loader2,
   Code2,
   Activity,
+  Languages,
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import { PrescriptionPdfModal } from '../../components/ui/PrescriptionPdfModal';
 import {
   analyzeSymptomConversation,
@@ -60,6 +62,7 @@ import {
   NeuInput,
   NeuSelect,
   NeuTextarea,
+  NeuModal,
   StatusIndicator,
 } from '../../components/ui/NeumorphicPrimitives';
 
@@ -73,6 +76,7 @@ interface PatientPortalPagesProps {
   onSelectAppointment: (apt: Appointment) => void;
   onOpenCancelModal: (apt: Appointment) => void;
   onOpenRescheduleModal: (apt: Appointment) => void;
+  onResubmitPaymentReceipt?: (aptId: string, receiptBase64: string) => void;
   notifications: NotificationItem[];
   onMarkNotificationRead: (id: string) => void;
   onMarkAllNotificationsRead: () => void;
@@ -91,6 +95,7 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
   onSelectAppointment,
   onOpenCancelModal,
   onOpenRescheduleModal,
+  onResubmitPaymentReceipt,
   notifications,
   onMarkNotificationRead,
   onMarkAllNotificationsRead,
@@ -98,6 +103,13 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
   onAddAssessmentSummary,
   onAcknowledgeDelayWait,
 }) => {
+  const { language, setLanguage, isTagalog } = useLanguage();
+
+  // Resubmit Receipt Modal State
+  const [resubmitModalApt, setResubmitModalApt] = useState<Appointment | null>(null);
+  const [resubmitImagePreview, setResubmitImagePreview] = useState<string>('');
+  const [resubmitError, setResubmitError] = useState<string | null>(null);
+  const patientResubmitFileInputRef = React.useRef<HTMLInputElement | null>(null);
   // Filter appointments for this patient
   const myAppointments = useMemo(
     () => appointments.filter((a) => a.patientId === patientProfile.id),
@@ -634,6 +646,45 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
                       Reason: <span className="text-[#172B4D]">{apt.reasonForVisit}</span>
                     </p>
 
+                    {apt.paymentStatus === 'Payment Pending Verification' && (
+                      <div className="p-3 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/30 space-y-1 text-xs mt-1">
+                        <div className="font-bold text-[#3478F6] flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{isTagalog ? 'Naisumite na ang Resibo · Verifying Payment' : 'Payment Receipt Submitted · Awaiting Clinic Verification'}</span>
+                        </div>
+                        <p className="text-[11px] text-[#64748B]">
+                          {isTagalog
+                            ? 'Naka-hold muna ang iyong appointment habang sinusuri ng clinic admin ang resibo ng iyong bayad. Idi-dispatch sa doktor kapag verified na.'
+                            : 'Your appointment request is on hold while clinic administration verifies your payment screenshot. It will be routed to the doctor upon confirmation.'}
+                        </p>
+                      </div>
+                    )}
+
+                    {(apt.paymentStatus === 'Rejected' || (apt.rejectionReason && apt.status === 'Pending')) && (
+                      <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2 text-xs mt-1">
+                        <div className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <span>{isTagalog ? 'Tinanggihan ang Resibo ng Bayad' : 'Payment Receipt Rejected'}</span>
+                        </div>
+                        <p className="text-[11px] text-[#64748B]">
+                          <strong>{isTagalog ? 'Dahilan:' : 'Reason:'}</strong> {apt.rejectionReason || (isTagalog ? 'Hindi malinaw ang larawan ng resibo.' : 'Receipt screenshot unreadable or incomplete.')}
+                        </p>
+                        <div className="pt-1">
+                          <NeuButton
+                            size="sm"
+                            variant="primary"
+                            onClick={() => {
+                              setResubmitModalApt(apt);
+                              setResubmitImagePreview('');
+                              setResubmitError(null);
+                            }}
+                          >
+                            {isTagalog ? '📸 Mag-upload ng Bagong Resibo' : '📸 Resubmit Payment Receipt Screenshot'}
+                          </NeuButton>
+                        </div>
+                      </div>
+                    )}
+
                     {apt.cancellationReason && (
                       <p className="text-xs text-[#C63D4D] font-medium">
                         Cancelled Reason: {apt.cancellationReason}
@@ -990,8 +1041,8 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
         )}
 
         <form onSubmit={handleSaveProfile} className="space-y-6">
-          <NeuCard className="space-y-4">
-            <h2 className="text-base font-bold text-[#172B4D] pb-2 border-b border-black/5">
+          <NeuCard className="space-y-4 !bg-[#1E293B]/75 backdrop-blur-xl border border-white/25 shadow-[0_12px_36px_rgba(15,23,42,0.32),inset_0_1px_1px_rgba(255,255,255,0.25)] [&_label]:!text-slate-100">
+            <h2 className="text-base font-bold text-white pb-2 border-b border-white/15">
               1. Personal & Contact Information
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1107,6 +1158,52 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
                 }
                 className="!shadow-none focus:!shadow-none !bg-white/80 !border !border-slate-300/80 focus:!border-[#3478F6]"
               />
+            </div>
+
+            {/* Language Preference Card for Patients */}
+            <div className="pt-2 border-t border-black/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Languages className="w-4 h-4 text-[#3478F6]" />
+                  <span className="text-xs font-bold text-[#172B4D]">
+                    Preferred Language / Nais na Wika
+                  </span>
+                </div>
+                <span
+                  className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                    isTagalog ? 'bg-[#16865C]/15 text-[#16865C]' : 'bg-[#3478F6]/15 text-[#3478F6]'
+                  }`}
+                >
+                  {isTagalog ? '✓ Naka-Tagalog' : '✓ English Active'}
+                </span>
+              </div>
+              <p className="text-xs text-[#64748B]">
+                Piliin ang nais mong wika para sa buong portal mo (English o Tagalog).
+              </p>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    !isTagalog
+                      ? 'border-[#3478F6] bg-[#3478F6]/10 text-[#3478F6] ring-1 ring-[#3478F6]'
+                      : 'neu-inset-sm text-[#64748B] hover:text-[#172B4D]'
+                  }`}
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('tl')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    isTagalog
+                      ? 'border-[#16865C] bg-[#16865C]/10 text-[#16865C] ring-1 ring-[#16865C]'
+                      : 'neu-inset-sm text-[#64748B] hover:text-[#172B4D]'
+                  }`}
+                >
+                  Tagalog
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-end pt-2">
@@ -1833,6 +1930,162 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Resubmit Payment Receipt Modal */}
+      <NeuModal
+        isOpen={!!resubmitModalApt}
+        onClose={() => {
+          setResubmitModalApt(null);
+          setResubmitImagePreview('');
+          setResubmitError(null);
+        }}
+        title={isTagalog ? `Mag-upload ng Bagong Resibo — ${resubmitModalApt?.referenceNumber || ''}` : `Resubmit Payment Receipt Screenshot — ${resubmitModalApt?.referenceNumber || ''}`}
+        subtitle={isTagalog ? 'I-upload ang malinaw na screenshot ng GCash, Maya, o QR Ph payment receipt' : 'Upload a clear screenshot of your payment transfer receipt to resume booking verification'}
+      >
+        {resubmitModalApt && (
+          <div className="space-y-4 text-xs">
+            <div className="neu-inset p-3 rounded-xl space-y-1 bg-[#E9EEF3]">
+              <div className="font-bold text-[#172B4D]">
+                {isTagalog ? 'Muling Isusumite Para Sa:' : 'Resubmitting Receipt For:'}
+              </div>
+              <div>
+                {resubmitModalApt.doctorName} · {resubmitModalApt.departmentName}
+              </div>
+              <div className="font-mono text-[#16865C] font-semibold">
+                {formatReadableDate(resubmitModalApt.date)} ({resubmitModalApt.timeLabel})
+              </div>
+              <div className="font-extrabold text-[#3478F6] text-sm pt-1">
+                Amount: ₱{resubmitModalApt.paymentAmountPhp || 10}.00 PHP
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block font-bold text-[#172B4D]">
+                {isTagalog ? 'Mag-upload ng Bagong Screenshot (PNG, JPEG, WebP, max 5MB):' : 'Upload New Screenshot (PNG, JPEG, WebP, max 5MB):'}
+              </label>
+
+              {/* Hidden file input with ref */}
+              <input
+                ref={patientResubmitFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
+                  if (!validTypes.includes(file.type)) {
+                    setResubmitError(isTagalog ? 'Hindi suportado ang format ng file.' : 'Invalid file format. Select PNG, JPEG, or WebP.');
+                    e.target.value = '';
+                    return;
+                  }
+                  if (file.size > 5 * 1024 * 1024) {
+                    setResubmitError(isTagalog ? 'Lumagpas sa 5MB ang sukat ng file.' : 'File size exceeds 5 MB maximum limit.');
+                    e.target.value = '';
+                    return;
+                  }
+                  setResubmitError(null);
+                  const reader = new FileReader();
+                  reader.onload = (evt) => {
+                    const res = evt.target?.result as string;
+                    if (res) setResubmitImagePreview(res);
+                  };
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }}
+              />
+
+              {resubmitImagePreview ? (
+                <div className="space-y-2">
+                  <div className="relative group max-h-48 overflow-hidden rounded-xl border border-black/10 bg-black/5 p-1 flex items-center justify-center">
+                    <img
+                      src={resubmitImagePreview}
+                      alt="Receipt Preview"
+                      className="max-h-44 object-contain rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResubmitImagePreview('');
+                        if (patientResubmitFileInputRef.current) patientResubmitFileInputRef.current.value = '';
+                      }}
+                      className="absolute top-2 right-2 bg-rose-600 text-white rounded-full p-1 text-xs shadow hover:bg-rose-700 cursor-pointer"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <NeuButton
+                      size="sm"
+                      type="button"
+                      onClick={() => patientResubmitFileInputRef.current?.click()}
+                    >
+                      {isTagalog ? 'Palitan ang Resibo' : 'Replace Receipt'}
+                    </NeuButton>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => patientResubmitFileInputRef.current?.click()}
+                  className="neu-inset rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer border-2 border-dashed border-black/20 hover:border-[#3478F6] transition-colors bg-[#E9EEF3]"
+                >
+                  <ImageIcon className="w-8 h-8 text-[#64748B] mb-2" />
+                  <div className="font-bold text-[#172B4D]">
+                    {isTagalog ? 'Pindutin para pumili ng larawan ng resibo' : 'Click to select receipt screenshot image'}
+                  </div>
+                  <div className="text-[11px] text-[#64748B] mt-0.5">
+                    PNG, JPEG, WebP (max 5 MB)
+                  </div>
+                  <NeuButton
+                    size="sm"
+                    variant="primary"
+                    type="button"
+                    className="mt-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      patientResubmitFileInputRef.current?.click();
+                    }}
+                  >
+                    {isTagalog ? 'Pumili ng Larawan' : 'Select Image'}
+                  </NeuButton>
+                </div>
+              )}
+              {resubmitError && (
+                <div className="text-xs font-semibold text-rose-600">{resubmitError}</div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/5">
+              <NeuButton
+                size="sm"
+                onClick={() => {
+                  setResubmitModalApt(null);
+                  setResubmitImagePreview('');
+                  setResubmitError(null);
+                }}
+              >
+                {isTagalog ? 'Kanselahin' : 'Cancel'}
+              </NeuButton>
+              <NeuButton
+                size="sm"
+                variant="primary"
+                disabled={!resubmitImagePreview}
+                onClick={() => {
+                  if (resubmitModalApt && resubmitImagePreview) {
+                    onResubmitPaymentReceipt?.(resubmitModalApt.id, resubmitImagePreview);
+                    setResubmitModalApt(null);
+                    setResubmitImagePreview('');
+                    setResubmitError(null);
+                  }
+                }}
+              >
+                {isTagalog ? 'Isumite ang Bagong Resibo' : 'Submit New Receipt'}
+              </NeuButton>
+            </div>
+          </div>
+        )}
+      </NeuModal>
     </div>
   );
 };

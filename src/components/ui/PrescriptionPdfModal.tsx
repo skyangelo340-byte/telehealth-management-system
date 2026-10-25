@@ -120,7 +120,7 @@ export const PrescriptionPdfModal: React.FC<PrescriptionPdfModalProps> = ({
         )}
 
         {/* Designed A4 Medical Prescription Pad Sheet (Visual Preview + Print Target) */}
-        <div className="bg-white text-[#172B4D] rounded-xl shadow-lg border border-slate-300 overflow-hidden mx-auto max-w-[760px]">
+        <div className="prescription-paper-preview bg-white text-[#172B4D] rounded-xl shadow-lg border border-slate-300 overflow-hidden mx-auto max-w-[760px]">
           {/* Navy Clinical Header Banner */}
           <div className="bg-[#172B4D] text-white px-6 py-5 border-b-4 border-[#3478F6] flex flex-wrap items-start justify-between gap-4">
             <div>
