@@ -90,7 +90,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       <div className="min-h-screen flex flex-col bg-[#E9EEF3] dark:bg-[#0B1020] text-[#172B4D] dark:text-[#F1F5F9]">
         {/* Top Bar Contract: Zone 1 (Single wordmark) — Zone 2 (4-5 clean text links) — Zone 3 (1-2 primary actions) */}
         <header className="sticky top-0 z-30 bg-[#E9EEF3]/95 dark:bg-[#0B1020]/95 backdrop-blur-xs border-b border-black/5 dark:border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-          {/* Zone 1: Single text element wordmark */}
+          {/* Zone 1: Single brand wordmark presentation (Revision 1) */}
           <button
             type="button"
             onClick={() => {
@@ -102,9 +102,19 @@ export const AppShell: React.FC<AppShellProps> = ({
                 else window.scrollTo({ top: 0, behavior: 'smooth' });
               }, 30);
             }}
-            className="text-lg font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-2.5 cursor-pointer text-left focus:outline-none"
           >
-            TeleHealth
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#3478F6] to-[#16865C] flex items-center justify-center text-white font-black text-sm shadow-sm shrink-0">
+              +
+            </div>
+            <div className="leading-none">
+              <span className="text-base sm:text-lg font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display whitespace-nowrap">
+                TeleHealth
+              </span>
+              <span className="block text-[9px] sm:text-[10px] font-bold tracking-wider text-[#64748B] dark:text-[#94A3B8] uppercase">
+                Management System
+              </span>
+            </div>
           </button>
 
           {/* Zone 2: Clean text navigation links */}
@@ -144,6 +154,13 @@ export const AppShell: React.FC<AppShellProps> = ({
               className="hover:text-[#172B4D] dark:hover:text-[#F1F5F9] transition-colors cursor-pointer whitespace-nowrap"
             >
               Symptom Assessment
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('use-case-diagram')}
+              className="hover:text-[#3478F6] dark:hover:text-[#60A5FA] transition-colors cursor-pointer whitespace-nowrap font-semibold"
+            >
+              Use Case Diagram
             </button>
           </nav>
 
@@ -231,6 +248,16 @@ export const AppShell: React.FC<AppShellProps> = ({
                   className="w-full text-left py-2.5 px-3.5 rounded-xl neu-btn text-xs font-semibold hover:text-[#3478F6] transition-colors cursor-pointer"
                 >
                   Symptom Assessment
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuestMobileMenuOpen(false);
+                    onNavigate('use-case-diagram');
+                  }}
+                  className="w-full text-left py-2.5 px-3.5 rounded-xl neu-btn text-xs font-semibold hover:text-[#3478F6] transition-colors cursor-pointer"
+                >
+                  Use Case Diagram
                 </button>
               </nav>
 
@@ -369,9 +396,19 @@ export const AppShell: React.FC<AppShellProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate(navItems[0].id)}
-                className="text-lg font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer text-left focus:outline-none"
               >
-                TeleHealth
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#3478F6] to-[#16865C] flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
+                  +
+                </div>
+                <div className="leading-none">
+                  <span className="text-base font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display">
+                    TeleHealth
+                  </span>
+                  <span className="block text-[9px] font-bold tracking-wider text-[#64748B] dark:text-[#94A3B8] uppercase">
+                    Management System
+                  </span>
+                </div>
               </button>
             )}
             <button
@@ -407,8 +444,17 @@ export const AppShell: React.FC<AppShellProps> = ({
           </nav>
         </div>
 
-        {/* Sign Out Footer */}
-        <div className="pt-4 border-t border-black/5 space-y-2.5">
+        {/* Sign Out & Architecture Footer */}
+        <div className="pt-4 border-t border-black/5 dark:border-white/10 space-y-2">
+          {!sidebarCollapsed && (
+            <button
+              type="button"
+              onClick={() => onNavigate('use-case-diagram')}
+              className="w-full neu-btn px-2.5 py-1.5 rounded-xl flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#3478F6] dark:text-[#60A5FA] cursor-pointer hover:bg-white/40"
+            >
+              <span>Use Case Diagram</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSignOutConfirmOpen(true)}
@@ -512,12 +558,24 @@ export const AppShell: React.FC<AppShellProps> = ({
                 {currentUser?.fullName.charAt(0) || 'U'}
               </div>
               <div className="hidden sm:block leading-tight">
-                <div className="font-bold text-[#172B4D] truncate max-w-[140px]">
+                <div className="font-bold text-[#172B4D] dark:text-[#F1F5F9] truncate max-w-[140px]">
                   {currentUser?.fullName}
                 </div>
-                <div className="text-[10px] text-[#64748B] capitalize">{currentRole} Portal</div>
+                <div className="text-[10px] text-[#64748B] dark:text-[#94A3B8] capitalize">{currentRole} Portal</div>
               </div>
             </div>
+
+            {/* Header Direct Logout / Sign Out Action (Revision 10) */}
+            <button
+              type="button"
+              onClick={() => setSignOutConfirmOpen(true)}
+              title="Sign Out of Portal"
+              aria-label="Sign Out of Portal"
+              className="neu-btn px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold text-[#C63D4D] hover:bg-[#C63D4D]/10 transition-colors cursor-pointer shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
         </header>
 

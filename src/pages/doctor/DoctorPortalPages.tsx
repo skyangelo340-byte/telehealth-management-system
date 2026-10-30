@@ -729,28 +729,28 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                   )}
 
                   <div
-                    className={`rounded-xl px-4 py-3 flex items-center justify-between gap-4 transition-all ${
+                    className={`rounded-xl px-3.5 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all ${
                       matchedApt
                         ? 'neu-raised border-l-4 border-l-[#3478F6]'
                         : 'neu-inset-sm'
                     }`}
                   >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-34 shrink-0 font-mono-tabular text-xs font-bold text-[#172B4D]">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="w-28 sm:w-34 shrink-0 font-mono-tabular text-xs font-bold text-[#172B4D] dark:text-[#F1F5F9]">
                         {slot.label}
                       </div>
-                      <div className="h-4 w-px bg-black/10 shrink-0 hidden sm:block" />
+                      <div className="h-4 w-px bg-black/10 dark:bg-white/10 shrink-0 hidden sm:block" />
                       {matchedApt ? (
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-[#172B4D] truncate">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="text-sm font-bold text-[#172B4D] dark:text-[#F1F5F9] truncate">
                               {matchedApt.patientName}
                             </span>
                             <span className="text-[11px] font-mono-tabular font-semibold text-[#3478F6] shrink-0">
                               {matchedApt.referenceNumber}
                             </span>
                           </div>
-                          <div className="text-xs text-[#64748B] truncate">
+                          <div className="text-xs text-[#64748B] dark:text-[#A7B4CC] truncate">
                             {matchedApt.appointmentTypeName}
                           </div>
                         </div>
@@ -758,7 +758,7 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                     </div>
 
                     {matchedApt ? (
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-auto">
                         <NeuButton
                           size="sm"
                           variant={isConfirmed ? 'primary' : 'secondary'}

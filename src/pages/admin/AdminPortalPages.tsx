@@ -389,7 +389,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
         </NeuCard>
 
         <NeuCard className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[680px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-black/10 text-[#64748B]">
                 <th className="py-3 px-3">Patient ID</th>
@@ -1566,7 +1566,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
         </NeuCard>
 
         <NeuCard className="overflow-x-auto border border-[#3478F6]/20">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[720px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-black/10 text-[#64748B]">
                 <th className="py-3 px-3.5 font-semibold whitespace-nowrap">Ref #</th>
@@ -2138,12 +2138,12 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
                   >
                     {qrCodeDataUrl ? 'Replace QR Code Image / Palitan' : 'Select & Upload QR Code Image / Pumili ng QR'}
                   </NeuButton>
-                  {qrCodeDataUrl !== '/assets/aistudio/image_3826cde4.png' && (
+                  {qrCodeDataUrl !== '/assets/aistudio/codex-clipboard-fa1914df-6c66-414b-940a-cca4e3f9efe0_c435cfc5.png' && (
                     <NeuButton
                       size="sm"
                       type="button"
                       onClick={() => {
-                        setQrCodeDataUrl('/assets/aistudio/image_3826cde4.png');
+                        setQrCodeDataUrl('/assets/aistudio/codex-clipboard-fa1914df-6c66-414b-940a-cca4e3f9efe0_c435cfc5.png');
                         if (adminQrFileInputRef.current) adminQrFileInputRef.current.value = '';
                       }}
                     >
@@ -2453,6 +2453,26 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
 
   const activeSlice = hoveredPieIndex !== null ? pieSlices[hoveredPieIndex] : null;
 
+  const handlePieSliceClick = (slice: (typeof pieSlices)[0]) => {
+    if (slice.id === 'slice-confirmed') {
+      setStatusFilter('Confirmed');
+      setSearchQuery('');
+    } else if (slice.id === 'slice-pending') {
+      setStatusFilter('Pending');
+      setSearchQuery('');
+    } else if (slice.id === 'slice-today') {
+      setStatusFilter('ALL');
+      setSearchQuery(DEMO_TODAY);
+    } else if (slice.id === 'slice-completed') {
+      setStatusFilter('Completed');
+      setSearchQuery('');
+    } else {
+      setStatusFilter('ALL');
+      setSearchQuery('');
+    }
+    onNavigate(slice.targetScreen);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2468,6 +2488,13 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          <NeuButton
+            size="sm"
+            onClick={() => onNavigate('use-case-diagram')}
+            icon={<ShieldCheck className="w-4 h-4 text-[#3478F6]" />}
+          >
+            Use Case Diagram
+          </NeuButton>
           <NeuButton
             size="sm"
             onClick={() => setColabModalOpen(true)}
@@ -2517,7 +2544,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
               Clinic Operations Pie Infographic
             </h2>
             <p className="text-[11px] text-slate-300">
-              Click any sector on the radial infographic to open its corresponding clinical management view.
+              Click any sector on the radial infographic to open its corresponding clinical management view with matching active filters.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs">
@@ -2573,7 +2600,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
                   slice.endAngle
                 );
 
-                // Inner dark ring overlay path for depth (like the reference image around the center circle)
+                // Inner dark ring overlay path for depth
                 const innerShadowBandPath = buildAnnularSectorPath(
                   cx,
                   cy,
@@ -2588,7 +2615,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
                     key={slice.id}
                     onMouseEnter={() => setHoveredPieIndex(idx)}
                     onMouseLeave={() => setHoveredPieIndex(null)}
-                    onClick={() => onNavigate(slice.targetScreen)}
+                    onClick={() => handlePieSliceClick(slice)}
                     className="cursor-pointer transition-transform duration-200"
                   >
                     <path
@@ -2639,7 +2666,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
                   type="button"
                   onMouseEnter={() => setHoveredPieIndex(idx)}
                   onMouseLeave={() => setHoveredPieIndex(null)}
-                  onClick={() => onNavigate(slice.targetScreen)}
+                  onClick={() => handlePieSliceClick(slice)}
                   style={{
                     left: `${leftPct}%`,
                     top: `${topPct}%`,

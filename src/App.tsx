@@ -61,6 +61,7 @@ import {
 import { PatientPortalPages } from './pages/patient/PatientPortalPages';
 import { DoctorPortalPages } from './pages/doctor/DoctorPortalPages';
 import { AdminPortalPages } from './pages/admin/AdminPortalPages';
+import { UseCaseDiagramView } from './pages/common/UseCaseDiagramView';
 import {
   PrivacyPolicyModal,
   TermsConditionsModal,
@@ -1299,6 +1300,23 @@ export default function App() {
 
   // Render active screen inside AppShell
   const renderScreenContent = () => {
+    if (currentScreen === 'use-case-diagram') {
+      return (
+        <UseCaseDiagramView
+          onNavigate={setCurrentScreen}
+          returnScreen={
+            currentRole === 'patient'
+              ? 'patient-dashboard'
+              : currentRole === 'doctor'
+                ? 'doctor-dashboard'
+                : currentRole === 'admin'
+                  ? 'admin-dashboard'
+                  : 'landing'
+          }
+        />
+      );
+    }
+
     if (currentRole === 'guest') {
       return (
         <PublicPages
@@ -1786,6 +1804,38 @@ export default function App() {
             saveDoctorToDb(updatedDocProfile);
           }
 
+          // Check for appointments affected by this approved block/leave (Revision 3: Schedule-change notifications)
+          const affectedApts = appointments.filter((a) => {
+            if (a.doctorId !== doctorId) return false;
+            if (a.status !== 'Confirmed' && a.status !== 'Pending' && a.status !== 'Rescheduled' && a.status !== 'Reschedule Requested') {
+              return false;
+            }
+            const isInDateRange = a.date >= targetBlock.startDate && a.date <= targetBlock.endDate;
+            if (!isInDateRange) return false;
+            if (targetBlock.slotStartTime) {
+              return a.startTime === targetBlock.slotStartTime;
+            }
+            return true;
+          });
+
+          const newNotifs: NotificationItem[] = [];
+          affectedApts.forEach((apt, idx) => {
+            const patNotif: NotificationItem = {
+              id: `notif-sched-chg-${Date.now()}-${idx}`,
+              recipientRole: 'patient',
+              recipientId: apt.patientId,
+              type: 'Doctor Schedule Change',
+              title: `Physician Schedule Notice — ${apt.referenceNumber}`,
+              message: `Schedule Update: ${docProfile.fullName} will be away (${targetBlock.type}: ${targetBlock.reason}) on your scheduled date ${formatReadableDate(apt.date)} (${apt.timeLabel}). Your appointment was NOT silently changed. Please visit My Appointments and tap "Reschedule" to select another open slot or physician, or contact the clinic.`,
+              appointmentId: apt.id,
+              appointmentRef: apt.referenceNumber,
+              read: false,
+              createdAt: new Date().toISOString(),
+            };
+            newNotifs.push(patNotif);
+            saveNotificationToDb(patNotif);
+          });
+
           const docNotif: NotificationItem = {
             id: `notif-${Date.now()}-blk-app`,
             recipientRole: 'doctor',
@@ -1794,12 +1844,18 @@ export default function App() {
             title: `Approved by Admin: ${targetBlock.type} (${targetBlock.startDate})`,
             message: `Administrator approved your ${targetBlock.type} request for ${targetBlock.startDate}${
               targetBlock.endDate !== targetBlock.startDate ? ` to ${targetBlock.endDate}` : ''
-            }${targetBlock.slotStartTime ? ` (${targetBlock.slotStartTime})` : ''}. Patient booking slots are now officially blocked.`,
+            }${targetBlock.slotStartTime ? ` (${targetBlock.slotStartTime})` : ''}. ${
+              affectedApts.length > 0
+                ? `${affectedApts.length} scheduled patient(s) (${affectedApts.map((a) => a.patientName).join(', ')}) were notified to reschedule.`
+                : 'No existing patient bookings were impacted.'
+            }`,
             read: false,
             createdAt: new Date().toISOString(),
           };
-          setNotifications((prev) => [docNotif, ...prev]);
+          newNotifs.push(docNotif);
           saveNotificationToDb(docNotif);
+
+          setNotifications((prev) => [...newNotifs, ...prev]);
 
           appendAuditLog(
             currentUser?.fullName || 'Admin',

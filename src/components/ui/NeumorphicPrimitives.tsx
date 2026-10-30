@@ -194,18 +194,22 @@ export const NeuSelect: React.FC<
       <select
         id={selectId}
         required={required}
-        className={`neu-inset rounded-[18px] px-4 py-3 text-sm text-[#101B45] dark:text-[#F0F5FF] focus:outline-none ${
+        className={`neu-inset rounded-[18px] px-4 py-3 text-sm text-[#101B45] dark:text-[#F0F5FF] bg-transparent dark:bg-[#0B1220] focus:outline-none ${
           error ? 'ring-2 ring-[#D63649] dark:ring-[#F87171]' : ''
         } ${className}`}
         {...props}
       >
         {placeholder && (
-          <option value="" disabled>
+          <option value="" disabled className="bg-white dark:bg-[#0B1220] text-[#68789D] dark:text-[#8FA1C7]">
             {placeholder}
           </option>
         )}
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
+          <option
+            key={opt.value}
+            value={opt.value}
+            className="bg-white dark:bg-[#0B1220] text-[#101B45] dark:text-[#F0F5FF]"
+          >
             {opt.label}
           </option>
         ))}

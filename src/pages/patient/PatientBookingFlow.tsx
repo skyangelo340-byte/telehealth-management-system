@@ -14,6 +14,7 @@ import {
   HelpCircle,
   X,
   ChevronDown,
+  Info,
 } from 'lucide-react';
 import {
   PatientProfile,
@@ -609,10 +610,8 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                       <span>📲 {systemSettings.clinicQrBankName || 'GCash / Maya / Bank QR Ph'}</span>
                     </div>
                     <div className="neu-inset-sm rounded-xl p-3 space-y-1.5 text-xs">
-                      <div>Account Name: <strong className="text-[#172B4D]">{systemSettings.clinicQrAccountName || 'TeleHealth Medical Center'}</strong></div>
-                      <div>Account Number: <strong className="font-mono text-[#3478F6]">{systemSettings.clinicQrAccountNumber || '0917-888-9999'}</strong></div>
-                      <div>Required Fee / Bayad: <strong className="font-extrabold text-[#16865C]">{feeFormatted}</strong></div>
-                      <div>Include Reference Note: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{previewReferenceNumber}</strong></div>
+                      <div>Required Fee / Bayad: <strong className="font-extrabold text-[#16865C] dark:text-[#34D399]">{feeFormatted}</strong></div>
+                      <div>Include Reference Note / Reperensya: <strong className="font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">{previewReferenceNumber}</strong></div>
                     </div>
                     <ol className="list-decimal pl-4 space-y-1 text-[11px] text-[#64748B]">
                       <li>Open GCash, Maya, or any e-wallet/bank app and scan the clinic QR code. / I-scan ang QR ng klinik.</li>
@@ -1060,12 +1059,63 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                   />
 
                   <NeuInput
+                    id="input-contact-number"
                     label="Contact Number"
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={11}
                     required
-                    placeholder="+1 (415) 555-0194"
-                    value={draft.contactNumber}
-                    onChange={(e) => setDraft((p) => ({ ...p, contactNumber: e.target.value }))}
+                    placeholder="09171234567"
+                    value={draft.contactNumber ? draft.contactNumber.replace(/\D/g, '').slice(0, 11) : ''}
+                    onKeyDown={(e) => {
+                      if (
+                        e.ctrlKey ||
+                        e.metaKey ||
+                        e.altKey ||
+                        [
+                          'Backspace',
+                          'Delete',
+                          'ArrowLeft',
+                          'ArrowRight',
+                          'ArrowUp',
+                          'ArrowDown',
+                          'Tab',
+                          'Enter',
+                          'Escape',
+                          'Home',
+                          'End',
+                        ].includes(e.key)
+                      ) {
+                        return;
+                      }
+                      if (!/^\d$/.test(e.key)) {
+                        e.preventDefault();
+                        return;
+                      }
+                      const input = e.currentTarget;
+                      const selectionLength = (input.selectionEnd ?? 0) - (input.selectionStart ?? 0);
+                      if (selectionLength === 0 && input.value.length >= 11) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData('text') || '';
+                      const pastedDigits = pasted.replace(/\D/g, '');
+                      const input = e.currentTarget;
+                      const start = input.selectionStart ?? (draft.contactNumber?.length || 0);
+                      const end = input.selectionEnd ?? (draft.contactNumber?.length || 0);
+                      const current = (draft.contactNumber || '').replace(/\D/g, '');
+                      const combined = (current.slice(0, start) + pastedDigits + current.slice(end))
+                        .replace(/\D/g, '')
+                        .slice(0, 11);
+                      setDraft((p) => ({ ...p, contactNumber: combined }));
+                    }}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/\D/g, '').slice(0, 11);
+                      setDraft((p) => ({ ...p, contactNumber: numericValue }));
+                    }}
                     error={errors.contactNumber}
                   />
                 </div>
@@ -1246,7 +1296,7 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                     {/* Custom Dropdown List + Right-Side Floating Hover Card on Option Hover */}
                     {deptDropdownOpen && (
                       <div
-                        className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-2xl bg-[#EEF2F7] border border-white/80 shadow-[0_16px_36px_rgba(15,23,42,0.18)] py-1.5"
+                        className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-2xl bg-[#111b2d] text-[#e2e8f0] border border-white/80 shadow-[0_16px_36px_rgba(15,23,42,0.18)] py-1.5"
                         onMouseLeave={() => setHoveredDeptId(null)}
                       >
                         <div
@@ -1263,7 +1313,7 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                             setHoveredDeptId(null);
                           }}
                           onMouseEnter={() => setHoveredDeptId(null)}
-                          className="px-4 py-2 text-xs text-[#64748B] hover:bg-black/5 cursor-pointer"
+                          className="px-4 py-2 text-xs text-[#cbd5e1] hover:bg-black/5 cursor-pointer"
                         >
                           Select a Department...
                         </div>
@@ -1297,20 +1347,20 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                                 isHovered
                                   ? 'bg-[#3478F6] text-white font-semibold'
                                   : isSelected
-                                    ? 'bg-[#3478F6]/12 text-[#1D4ED8] font-semibold'
-                                    : 'text-[#101B45] hover:bg-[#3478F6]/10'
+                                    ? 'bg-[#3478F6]/30 text-white font-semibold'
+                                    : 'text-[#e2e8f0] hover:bg-[#3478F6]/20'
                               }`}
                             >
                               <span>{dept.name}</span>
                               <span
                                 className={`text-[10px] font-bold ${
-                                  isHovered ? 'text-white/90' : 'text-[#64748B]'
+                                  isHovered ? 'text-white/90' : 'text-[#94a3b8]'
                                 }`}
                               >
                                 {dept.code} →
                               </span>
 
-                              {/* Floating Pop-Up Card on the Right Side when Hovering This Option */}
+                              {/* Floating Pop-Up Card on the Right Side when Hovering This Option (Desktop/Tablet) */}
                               {isHovered &&
                                 (() => {
                                   const guide = DEPARTMENT_CLINICAL_GUIDE[dept.id] || {
@@ -1325,9 +1375,9 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                                   return (
                                     <div
                                       onClick={(e) => e.stopPropagation()}
-                                      className="pointer-events-none absolute left-full top-0 ml-3 w-[320px] sm:w-[350px] z-[60] rounded-2xl p-4 bg-white text-[#172B4D] border border-[#3478F6]/40 shadow-[0_20px_48px_rgba(15,23,42,0.28)] space-y-2.5 text-xs font-normal"
+                                      className="pointer-events-none hidden md:block absolute left-full top-0 ml-3 w-[320px] sm:w-[350px] z-[60] rounded-2xl p-4 bg-white dark:bg-[#131d31] text-[#172B4D] dark:text-[#f1f5f9] border border-[#3478F6]/50 shadow-[0_20px_48px_rgba(15,23,42,0.35)] space-y-2.5 text-xs font-normal"
                                     >
-                                      <div className="flex items-start justify-between gap-2 border-b border-black/10 pb-2">
+                                      <div className="flex items-start justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-2">
                                         <div className="flex items-center gap-1.5 text-[#3478F6] font-extrabold">
                                           <Stethoscope className="w-4 h-4 shrink-0" />
                                           <span>
@@ -1336,33 +1386,33 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                                         </div>
                                       </div>
 
-                                      <div className="p-2.5 rounded-xl bg-[#3478F6]/10 border border-[#3478F6]/20">
-                                        <div className="text-[10px] font-extrabold text-[#1D4ED8] uppercase tracking-wide">
+                                      <div className="p-2.5 rounded-xl bg-[#3478F6]/10 dark:bg-[#3478F6]/20 border border-[#3478F6]/25">
+                                        <div className="text-[10px] font-extrabold text-[#1D4ED8] dark:text-[#60A5FA] uppercase tracking-wide">
                                           Para Saan ang Department na Ito:
                                         </div>
-                                        <div className="text-xs font-bold text-[#172B4D] mt-0.5">
+                                        <div className="text-xs font-bold text-[#172B4D] dark:text-[#f1f5f9] mt-0.5">
                                           {guide.titleTagalog}
                                         </div>
-                                        <p className="text-[11px] text-[#475569] mt-1 leading-relaxed">
+                                        <p className="text-[11px] text-[#475569] dark:text-[#cbd5e1] mt-1 leading-relaxed">
                                           {guide.meaning}
                                         </p>
                                       </div>
 
                                       <div>
-                                        <div className="text-[10px] font-extrabold text-[#16865C] uppercase tracking-wide mb-1">
+                                        <div className="text-[10px] font-extrabold text-[#16865C] dark:text-[#34D399] uppercase tracking-wide mb-1">
                                           Mga Sakit / Sintomas na Ginagamot Dito:
                                         </div>
-                                        <ul className="space-y-0.5 pl-4 list-disc text-[#172B4D] font-medium text-[11px]">
+                                        <ul className="space-y-0.5 pl-4 list-disc text-[#172B4D] dark:text-[#e2e8f0] font-medium text-[11px]">
                                           {guide.commonSymptoms.map((sym, i) => (
                                             <li key={i}>{sym}</li>
                                           ))}
                                         </ul>
                                       </div>
 
-                                      <div className="pt-1.5 border-t border-black/10 flex items-center justify-between text-[11px] text-[#64748B]">
+                                      <div className="pt-1.5 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[11px] text-[#64748B] dark:text-[#94a3b8]">
                                         <span>
                                           Doctor:{' '}
-                                          <strong className="text-[#172B4D]">{guide.leadDoctor}</strong>
+                                          <strong className="text-[#172B4D] dark:text-white">{guide.leadDoctor}</strong>
                                         </span>
                                       </div>
                                     </div>
@@ -1438,7 +1488,79 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                   )}
                 </div>
 
-                {/* Reason for Visit */}
+                {/* Pre-Made Symptom Suggestions (Revision 5) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[#172B4D] dark:text-[#F1F5F9] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#3478F6]" />
+                      <span>Pre-Made Symptom Suggestions (Tap to add)</span>
+                    </label>
+                    <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8]">
+                      {draft.departmentId && DEPARTMENT_CLINICAL_GUIDE[draft.departmentId]
+                        ? `${departments.find((d) => d.id === draft.departmentId)?.name || 'Department'} Suggestions`
+                        : 'Common General Symptoms'}
+                    </span>
+                  </div>
+
+                  {/* Suggestion Chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {(() => {
+                      const deptSymptoms =
+                        draft.departmentId && DEPARTMENT_CLINICAL_GUIDE[draft.departmentId]
+                          ? DEPARTMENT_CLINICAL_GUIDE[draft.departmentId].commonSymptoms
+                          : [
+                              'Lagnat, trangkaso, o ubo (Fever / Flu)',
+                              'Sakit ng ulo o hilo (Headache / Dizziness)',
+                              'Mataas na blood pressure (High BP check)',
+                              'Pananakit ng tiyan (Abdominal discomfort)',
+                              'Panghihina ng katawan (Body weakness / Fatigue)',
+                              'General outpatient check-up & laboratory review',
+                            ];
+
+                      return deptSymptoms.map((sym, idx) => {
+                        const isAdded = draft.reasonForVisit.toLowerCase().includes(sym.toLowerCase().slice(0, 15));
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              if (isAdded) {
+                                // If already added, remove or leave as is
+                                const regex = new RegExp(`(^|,\\s*)${sym.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi');
+                                const cleaned = draft.reasonForVisit.replace(regex, '').replace(/^,\s*/, '').trim();
+                                setDraft((p) => ({ ...p, reasonForVisit: cleaned }));
+                              } else {
+                                const separator = draft.reasonForVisit.trim() ? ', ' : '';
+                                setDraft((p) => ({
+                                  ...p,
+                                  reasonForVisit: p.reasonForVisit.trim() + separator + sym,
+                                }));
+                              }
+                            }}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isAdded
+                                ? 'bg-[#3478F6] text-white shadow-xs'
+                                : 'neu-btn text-[#475569] dark:text-[#CBD5E1] hover:text-[#172B4D] hover:bg-white/40'
+                            }`}
+                          >
+                            <span>{isAdded ? '✓' : '+'}</span>
+                            <span>{sym}</span>
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* Clinical Disclaimer Callout */}
+                  <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-900/40 text-[11px] text-blue-900 dark:text-blue-200">
+                    <Info className="w-4 h-4 shrink-0 text-[#3478F6] mt-0.5" />
+                    <div>
+                      <strong>Clinical Disclaimer:</strong> Pre-made symptom suggestions are provided for intake guidance and convenience only. They do not diagnose medical conditions or replace a licensed clinician's review. You may freely type or customize your reason for visit below.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reason for Visit Textarea (Custom Free-Text Editable) */}
                 <NeuTextarea
                   label="Reason for Visit / Chief Complaint"
                   required
@@ -1447,6 +1569,7 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                   value={draft.reasonForVisit}
                   onChange={(e) => setDraft((p) => ({ ...p, reasonForVisit: e.target.value }))}
                   error={errors.reasonForVisit}
+                  helperText="Free-text custom input. Tap suggestions above or describe your symptoms directly."
                 />
 
                 <div className="flex items-center justify-between gap-3 pt-3 border-t border-black/5">

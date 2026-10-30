@@ -542,3 +542,28 @@ textarea:focus-visible {
 }
 
 
+
+
+/* Dark theme contrast safeguards for legacy surfaces and controls */
+html.dark :is(.bg-white, .bg-slate-50, .bg-gray-50, .bg-zinc-50, .bg-neutral-50, .bg-slate-100, .bg-gray-100) {
+  background-color: #101827 !important;
+}
+html.dark :is(.bg-white, .bg-slate-50, .bg-gray-50, .bg-zinc-50, .bg-neutral-50, .bg-slate-100, .bg-gray-100) :is(.text-black, .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-900, .text-gray-800, .text-gray-700, .text-zinc-900, .text-neutral-900) {
+  color: #e2e8f0 !important;
+}
+html.dark :is(.text-black, .text-slate-950, .text-slate-900, .text-slate-800, .text-gray-900, .text-gray-800, .text-zinc-900, .text-neutral-900) {
+  color: #e2e8f0;
+}
+html.dark :is(.text-slate-600, .text-slate-500, .text-gray-600, .text-gray-500, .text-zinc-600, .text-zinc-500, .text-neutral-600, .text-neutral-500) {
+  color: #aebbd0;
+}
+html.dark :is(input:not([type='checkbox']):not([type='radio']), textarea, select) {
+  color: #e2e8f0;
+  background-color: #0b1220;
+  border-color: #475569;
+}
+html.dark :is(input, textarea)::placeholder { color: #94a3b8; opacity: 1; }
+html.dark option { color: #e2e8f0; background-color: #0b1220; }
+html.dark :is(.border-slate-100, .border-slate-200, .border-gray-100, .border-gray-200, .border-zinc-100, .border-zinc-200) {
+  border-color: #334155 !important;
+}

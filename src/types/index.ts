@@ -8,6 +8,7 @@ export type ScreenId =
   | 'forgot-password'
   | 'privacy-policy'
   | 'terms-conditions'
+  | 'use-case-diagram'
   // PATIENT
   | 'patient-dashboard'
   | 'book-appointment'
