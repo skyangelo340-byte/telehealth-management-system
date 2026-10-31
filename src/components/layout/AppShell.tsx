@@ -155,13 +155,6 @@ export const AppShell: React.FC<AppShellProps> = ({
             >
               Symptom Assessment
             </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('use-case-diagram')}
-              className="hover:text-[#3478F6] dark:hover:text-[#60A5FA] transition-colors cursor-pointer whitespace-nowrap font-semibold"
-            >
-              Use Case Diagram
-            </button>
           </nav>
 
           {/* Zone 3: Settings popover & primary actions */}
@@ -248,16 +241,6 @@ export const AppShell: React.FC<AppShellProps> = ({
                   className="w-full text-left py-2.5 px-3.5 rounded-xl neu-btn text-xs font-semibold hover:text-[#3478F6] transition-colors cursor-pointer"
                 >
                   Symptom Assessment
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGuestMobileMenuOpen(false);
-                    onNavigate('use-case-diagram');
-                  }}
-                  className="w-full text-left py-2.5 px-3.5 rounded-xl neu-btn text-xs font-semibold hover:text-[#3478F6] transition-colors cursor-pointer"
-                >
-                  Use Case Diagram
                 </button>
               </nav>
 
