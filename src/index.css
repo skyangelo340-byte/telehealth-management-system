@@ -58,7 +58,8 @@
     background-attachment: fixed;
     color: var(--text-navy);
     font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    line-height: 1.55;
+    font-size: 16px;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     transition: background-color 200ms ease, color 200ms ease;
   }
@@ -567,3 +568,64 @@ html.dark option { color: #e2e8f0; background-color: #0b1220; }
 html.dark :is(.border-slate-100, .border-slate-200, .border-gray-100, .border-gray-200, .border-zinc-100, .border-zinc-200) {
   border-color: #334155 !important;
 }
+
+/* ==========================================================================
+   Accessibility & Readability Enhancements for Older Users & Low-Vision
+   Modestly bump base/body and small UI text by 1–2px across all surfaces
+   while strictly preserving heading hierarchy, brand colors, and layouts.
+   ========================================================================== */
+
+/* Small UI text modestly bumped from 12px to 13.5px */
+.text-xs {
+  font-size: 13.5px !important;
+  line-height: 1.48 !important;
+}
+
+/* Secondary body & interactive control text bumped from 14px to 15px */
+.text-sm {
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+/* Base text readability bumped from 16px to 17px */
+.text-base {
+  font-size: 17px !important;
+  line-height: 1.6 !important;
+}
+
+/* Micro badges & labels bumped from 8-9px to 10.5-11px */
+.text-\[8px\] {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+}
+
+.text-\[9px\] {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
+/* Small status chips & metadata bumped from 10px to 12px */
+.text-\[10px\] {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* Timestamps, subtitles & secondary notes bumped from 11px to 12.5px */
+.text-\[11px\] {
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+
+/* Form inputs, selects, textareas enhanced for high readability */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+}
+
+/* Table cells and card text wrapping to prevent any clipping */
+td, th {
+  word-break: normal;
+}
+

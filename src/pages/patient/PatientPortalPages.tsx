@@ -625,7 +625,7 @@ export const PatientPortalPages: React.FC<PatientPortalPagesProps> = ({
                       </div>
                     ) : null}
 
-                    <p className="text-xs text-[#64748B] line-clamp-1">
+                    <p className="text-xs text-[#64748B] line-clamp-2 break-words">
                       Reason: <span className="text-[#172B4D]">{apt.reasonForVisit}</span>
                     </p>
 

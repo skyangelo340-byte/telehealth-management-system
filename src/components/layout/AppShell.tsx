@@ -107,11 +107,11 @@ export const AppShell: React.FC<AppShellProps> = ({
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#3478F6] to-[#16865C] flex items-center justify-center text-white font-black text-sm shadow-sm shrink-0">
               +
             </div>
-            <div className="leading-none">
+            <div className="leading-tight">
               <span className="text-base sm:text-lg font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display whitespace-nowrap">
                 TeleHealth
               </span>
-              <span className="block text-[9px] sm:text-[10px] font-bold tracking-wider text-[#64748B] dark:text-[#94A3B8] uppercase">
+              <span className="block text-[10.5px] sm:text-xs font-bold tracking-wider text-[#64748B] dark:text-[#94A3B8] uppercase">
                 Management System
               </span>
             </div>
@@ -384,11 +384,11 @@ export const AppShell: React.FC<AppShellProps> = ({
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#3478F6] to-[#16865C] flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
                   +
                 </div>
-                <div className="leading-none">
+                <div className="leading-tight">
                   <span className="text-base font-extrabold tracking-tight text-[#172B4D] dark:text-[#F1F5F9] font-display">
                     TeleHealth
                   </span>
-                  <span className="block text-[9px] font-bold tracking-wider text-[#64748B] dark:text-[#94A3B8] uppercase">
+                  <span className="block text-[10.5px] font-bold tracking-wider text-[#64748B] dark:text-[#94A3B8] uppercase">
                     Management System
                   </span>
                 </div>
@@ -413,7 +413,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                   type="button"
                   onClick={() => onNavigate(item.id)}
                   title={sidebarCollapsed ? item.label : undefined}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                     isActive
                       ? 'neu-btn-primary text-white'
                       : 'text-[#64748B] hover:text-[#172B4D] hover:bg-white/40'
@@ -433,7 +433,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('use-case-diagram')}
-              className="w-full neu-btn px-2.5 py-1.5 rounded-xl flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#3478F6] dark:text-[#60A5FA] cursor-pointer hover:bg-white/40"
+              className="w-full neu-btn px-2.5 py-1.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-semibold text-[#3478F6] dark:text-[#60A5FA] cursor-pointer hover:bg-white/40"
             >
               <span>Use Case Diagram</span>
             </button>
@@ -441,7 +441,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           <button
             type="button"
             onClick={() => setSignOutConfirmOpen(true)}
-            className="w-full neu-btn px-3.5 py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-[#C63D4D] cursor-pointer"
+            className="w-full neu-btn px-3.5 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold text-[#C63D4D] cursor-pointer"
           >
             <LogOut className="w-4 h-4 shrink-0" />
             {!sidebarCollapsed && <span>Sign Out</span>}
@@ -462,7 +462,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="text-xs sm:text-sm font-semibold text-[#64748B] dark:text-[#A7B4CC] truncate">
+            <div className="text-sm font-semibold text-[#64748B] dark:text-[#A7B4CC] truncate">
               <span className="capitalize font-bold text-[#172B4D] dark:text-[#F1F5F9]">{currentRole} Workspace</span>
               <span className="mx-2">/</span>
               <span className="text-[#3478F6] dark:text-[#60A5FA] font-semibold">
@@ -483,7 +483,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#C63D4D] text-white text-[10px] font-mono-tabular font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#C63D4D] text-white text-[11px] font-mono-tabular font-bold flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -492,7 +492,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               {notifDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-80 neu-raised-lg rounded-2xl p-4 z-50 space-y-3">
                   <div className="flex items-center justify-between border-b border-black/5 pb-2">
-                    <span className="text-xs font-bold text-[#172B4D]">
+                    <span className="text-sm font-bold text-[#172B4D]">
                       Notifications ({unreadCount} Unread)
                     </span>
                     <button
@@ -502,7 +502,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                         if (currentRole === 'patient') onNavigate('patient-notifications');
                         else if (currentRole === 'doctor') onNavigate('doctor-notifications');
                       }}
-                      className="text-[11px] text-[#3478F6] font-semibold hover:underline cursor-pointer"
+                      className="text-xs text-[#3478F6] font-semibold hover:underline cursor-pointer"
                     >
                       View All
                     </button>
@@ -510,7 +510,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {roleNotifications.length === 0 ? (
-                      <div className="neu-inset-sm rounded-xl p-4 text-center text-xs text-[#64748B]">
+                      <div className="neu-inset-sm rounded-xl p-4 text-center text-sm text-[#64748B]">
                         No notifications for your account yet.
                       </div>
                     ) : (
@@ -525,8 +525,8 @@ export const AppShell: React.FC<AppShellProps> = ({
                           }}
                           className="neu-inset-sm rounded-xl p-2.5 text-xs cursor-pointer hover:bg-white/40"
                         >
-                          <div className="font-bold text-[#172B4D]">{n.title}</div>
-                          <p className="text-[11px] text-[#64748B] line-clamp-2 mt-0.5">{n.message}</p>
+                          <div className="font-bold text-[#172B4D] text-sm">{n.title}</div>
+                          <p className="text-xs text-[#64748B] line-clamp-2 mt-0.5">{n.message}</p>
                         </div>
                       ))
                     )}
@@ -541,10 +541,10 @@ export const AppShell: React.FC<AppShellProps> = ({
                 {currentUser?.fullName.charAt(0) || 'U'}
               </div>
               <div className="hidden sm:block leading-tight">
-                <div className="font-bold text-[#172B4D] dark:text-[#F1F5F9] truncate max-w-[140px]">
+                <div className="font-bold text-sm text-[#172B4D] dark:text-[#F1F5F9] truncate max-w-[140px]">
                   {currentUser?.fullName}
                 </div>
-                <div className="text-[10px] text-[#64748B] dark:text-[#94A3B8] capitalize">{currentRole} Portal</div>
+                <div className="text-xs text-[#64748B] dark:text-[#94A3B8] capitalize">{currentRole} Portal</div>
               </div>
             </div>
 
@@ -554,7 +554,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               onClick={() => setSignOutConfirmOpen(true)}
               title="Sign Out of Portal"
               aria-label="Sign Out of Portal"
-              className="neu-btn px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold text-[#C63D4D] hover:bg-[#C63D4D]/10 transition-colors cursor-pointer shrink-0"
+              className="neu-btn px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#C63D4D] hover:bg-[#C63D4D]/10 transition-colors cursor-pointer shrink-0"
             >
               <LogOut className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -587,7 +587,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                         onNavigate(item.id);
                         setMobileDrawerOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold ${
+                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold ${
                         currentScreen === item.id
                           ? 'neu-btn-primary text-white'
                           : 'text-[#64748B]'

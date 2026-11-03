@@ -128,7 +128,7 @@ export const StatusIndicator: React.FC<{
   }
 
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${colorClass}`}>
+    <span className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold ${colorClass}`}>
       <IconComp className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
       <span>{status}</span>
     </span>
@@ -147,7 +147,7 @@ export const NeuInput: React.FC<
   const inputId = id || `input-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   return (
     <div className={`flex flex-col gap-1.5 ${inputRightElement ? 'relative' : ''}`}>
-      <label htmlFor={inputId} className="text-xs font-semibold text-[#101B45] dark:text-[#F0F5FF] flex items-center justify-between px-1">
+      <label htmlFor={inputId} className="text-sm font-semibold text-[#101B45] dark:text-[#F0F5FF] flex items-center justify-between px-1">
         <span>
           {label} {required && <span className="text-[#D63649] dark:text-[#F87171]">*</span>}
         </span>
@@ -188,7 +188,7 @@ export const NeuSelect: React.FC<
   const selectId = id || `select-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={selectId} className="text-xs font-semibold text-[#101B45] dark:text-[#F0F5FF] px-1">
+      <label htmlFor={selectId} className="text-sm font-semibold text-[#101B45] dark:text-[#F0F5FF] px-1">
         {label} {required && <span className="text-[#D63649] dark:text-[#F87171]">*</span>}
       </label>
       <select
@@ -236,7 +236,7 @@ export const NeuTextarea: React.FC<
   const areaId = id || `textarea-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={areaId} className="text-xs font-semibold text-[#101B45] dark:text-[#F0F5FF] px-1">
+      <label htmlFor={areaId} className="text-sm font-semibold text-[#101B45] dark:text-[#F0F5FF] px-1">
         {label} {required && <span className="text-[#D63649] dark:text-[#F87171]">*</span>}
       </label>
       <textarea

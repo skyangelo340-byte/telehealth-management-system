@@ -1458,7 +1458,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
                       <div className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
                         ₱{apt.paymentAmountPhp || 10}.00 PHP
                       </div>
-                      <div className="text-[10px] font-mono text-[#64748B]">
+                      <div className="text-xs font-mono text-[#64748B]">
                         Submitted: {apt.paymentSubmittedAt ? new Date(apt.paymentSubmittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                       </div>
                     </div>
@@ -1466,21 +1466,21 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
 
                   <div className="text-xs text-[#64748B] pt-2 border-t border-black/5 grid grid-cols-2 gap-2">
                     <div>
-                      <div className="text-[10px] text-[#64748B]">Physician & Dept</div>
-                      <div className="font-semibold text-[#172B4D]">{apt.doctorName}</div>
-                      <div className="text-[10px] text-[#64748B]">{apt.departmentName}</div>
+                      <div className="text-xs text-[#64748B]">Physician & Dept</div>
+                      <div className="font-semibold text-sm text-[#172B4D]">{apt.doctorName}</div>
+                      <div className="text-xs text-[#64748B]">{apt.departmentName}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-[#64748B]">Requested Slot</div>
-                      <div className="font-semibold text-[#172B4D]">{formatReadableDate(apt.date)}</div>
-                      <div className="text-[10px] font-semibold text-[#16865C]">{apt.timeLabel}</div>
+                      <div className="text-xs text-[#64748B]">Requested Slot</div>
+                      <div className="font-semibold text-sm text-[#172B4D]">{formatReadableDate(apt.date)}</div>
+                      <div className="text-xs font-semibold text-[#16865C]">{apt.timeLabel}</div>
                     </div>
                   </div>
 
                   {/* Receipt Thumbnail */}
                   {apt.paymentReceiptUrl ? (
                     <div className="pt-2">
-                      <div className="text-[11px] font-bold text-[#172B4D] mb-1">Receipt Screenshot:</div>
+                      <div className="text-xs font-bold text-[#172B4D] mb-1">Receipt Screenshot:</div>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
@@ -1501,7 +1501,7 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
                           >
                             Inspect Receipt
                           </NeuButton>
-                          <div className="text-[10px] text-[#64748B]">Click to zoom full screenshot</div>
+                          <div className="text-xs text-[#64748B]">Click to zoom full screenshot</div>
                         </div>
                       </div>
                     </div>
@@ -1588,26 +1588,26 @@ export const AdminPortalPages: React.FC<AdminPortalPagesProps> = ({
                   </td>
                   <td className="py-3.5 px-3.5 whitespace-nowrap">
                     <div className="font-bold text-[#172B4D]">{apt.doctorName}</div>
-                    <div className="text-[11px] text-[#64748B] mt-0.5">{apt.departmentName}</div>
+                    <div className="text-xs text-[#64748B] mt-0.5">{apt.departmentName}</div>
                   </td>
                   <td className="py-3.5 px-3.5 font-mono-tabular whitespace-nowrap">
                     <div className="font-bold text-[#172B4D]">{formatReadableDate(apt.date)}</div>
-                    <div className="text-[#16865C] font-semibold text-[11px] mt-0.5">{apt.timeLabel}</div>
+                    <div className="text-[#16865C] font-semibold text-xs mt-0.5">{apt.timeLabel}</div>
                   </td>
                   <td className="py-3.5 px-3.5">
                     <StatusIndicator status={apt.status} />
                     {apt.cancellationReason && (
-                      <div className="text-[11px] text-[#C63D4D] mt-1 max-w-[220px] leading-snug">
+                      <div className="text-xs text-[#C63D4D] mt-1 max-w-[220px] leading-normal break-words">
                         Reason: {apt.cancellationReason}
                       </div>
                     )}
                     {apt.rejectionReason && (
-                      <div className="text-[11px] text-[#C63D4D] mt-1 max-w-[220px] leading-snug">
+                      <div className="text-xs text-[#C63D4D] mt-1 max-w-[220px] leading-normal break-words">
                         Reason: {apt.rejectionReason}
                       </div>
                     )}
                     {apt.rescheduleReason && (
-                      <div className="text-[11px] text-[#C68117] mt-1 max-w-[220px] leading-snug">
+                      <div className="text-xs text-[#C68117] mt-1 max-w-[220px] leading-normal break-words">
                         Reschedule: {apt.rescheduleReason}
                       </div>
                     )}

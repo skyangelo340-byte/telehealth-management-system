@@ -1045,13 +1045,6 @@ export const PublicPages: React.FC<PublicPagesProps> = ({
           >
             Terms & Conditions
           </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('use-case-diagram')}
-            className="hover:text-[#3478F6] dark:hover:text-[#60A5FA] font-semibold cursor-pointer"
-          >
-            Use Case Diagram
-          </button>
           <span>Contact: admintelehealth@gmail.com</span>
         </div>
       </footer>

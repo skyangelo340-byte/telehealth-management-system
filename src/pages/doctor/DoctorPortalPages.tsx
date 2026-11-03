@@ -377,7 +377,7 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
                             RX-{apt.referenceNumber}
                           </span>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                            className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${
                               hasRx
                                 ? 'bg-[#16865C]/15 text-[#16865C]'
                                 : 'bg-[#C68117]/15 text-[#C68117]'
@@ -389,12 +389,12 @@ export const DoctorPortalPages: React.FC<DoctorPortalPagesProps> = ({
 
                         <div>
                           <div className="text-sm font-bold text-[#172B4D]">{apt.patientName}</div>
-                          <div className="text-[11px] text-[#64748B] truncate">
+                          <div className="text-xs text-[#64748B] truncate">
                             {apt.reasonForVisit}
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] pt-1 border-t border-black/5">
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-black/5">
                           <span className="font-mono-tabular text-black font-semibold">
                             {formatReadableDate(apt.date)} · {apt.startTime}
                           </span>

@@ -1471,9 +1471,9 @@ export const PatientBookingFlow: React.FC<PatientBookingFlowProps> = ({
                               : 'neu-btn text-[#172B4D]'
                           }`}
                         >
-                          <div className="text-xs font-bold">{type.name}</div>
+                          <div className="text-sm font-bold">{type.name}</div>
                           <div
-                            className={`text-[11px] mt-0.5 line-clamp-1 ${
+                            className={`text-xs mt-0.5 line-clamp-2 break-words ${
                               isSelected ? 'text-white/85' : 'text-[#64748B]'
                             }`}
                           >
